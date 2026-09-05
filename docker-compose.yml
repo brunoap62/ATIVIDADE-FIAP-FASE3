@@ -1,0 +1,173 @@
+services:
+  # ==========================================
+  # BANCOS DE DADOS (PostgreSQL)
+  # ==========================================
+
+  # Banco de dados do Serviço de Autenticação (auth-service)
+  auth-db-postgresql:
+    image: postgres:15-alpine
+    container_name: togglemaster-auth-db
+    environment:
+      POSTGRES_USER: togglemaster_user
+      POSTGRES_PASSWORD: minhaSenhaSegura123
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./auth-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U togglemaster_user -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Banco de dados do Serviço de Flags (flag-service)
+  flag-db-postgresql:
+    image: postgres:15-alpine
+    container_name: togglemaster-flag-db
+    environment:
+      POSTGRES_USER: togglemaster_user
+      POSTGRES_PASSWORD: minhaSenhaSegura123
+      POSTGRES_DB: flags_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./flag-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U togglemaster_user -d flags_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Banco de dados do Serviço de Segmentação (targeting-service)
+  targeting-db-postgresql:
+    image: postgres:15-alpine
+    container_name: togglemaster-targeting-db
+    environment:
+      POSTGRES_USER: togglemaster_user
+      POSTGRES_PASSWORD: minhaSenhaSegura123
+      POSTGRES_DB: targeting_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./targeting-service/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U togglemaster_user -d targeting_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Cache / Banco de dados NoSQL (Redis) para o Serviço de Avaliação (evaluation-service)
+  redis:
+    image: redis:alpine
+    container_name: togglemaster-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # APLICAÇÕES / SERVIÇOS
+  # ==========================================
+
+  # Serviço de Autenticação (Go)
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: togglemaster-auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgres://togglemaster_user:minhaSenhaSegura123@auth-db-postgresql:5432/auth_db
+      - PORT=8001
+      - MASTER_KEY=admin-secreto-123
+    depends_on:
+      auth-db-postgresql:
+        condition: service_healthy
+
+  # Serviço de Flags (Python)
+  flag-service:
+    build:
+      context: ./flag-service
+      dockerfile: Dockerfile
+    container_name: togglemaster-flag-service
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=postgres://togglemaster_user:minhaSenhaSegura123@flag-db-postgresql:5432/flags_db
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - PORT=8002
+    depends_on:
+      flag-db-postgresql:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+
+  # Serviço de Segmentação (targeting-service) (Python)
+  targeting-service:
+    build:
+      context: ./targeting-service
+      dockerfile: Dockerfile
+    container_name: togglemaster-targeting-service
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=postgres://togglemaster_user:minhaSenhaSegura123@targeting-db-postgresql:5432/targeting_db
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - PORT=8003
+    depends_on:
+      targeting-db-postgresql:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+
+  # Serviço de Avaliação (Go)
+  evaluation-service:
+    build:
+      context: ./evaluation-service
+      dockerfile: Dockerfile
+    container_name: togglemaster-evaluation-service
+    ports:
+      - "8004:8004"
+    environment:
+      - PORT=8004
+      - REDIS_URL=redis://redis:6379
+      - FLAG_SERVICE_URL=http://flag-service:8002
+      - TARGETING_SERVICE_URL=http://targeting-service:8003
+      - SERVICE_API_KEY=${SERVICE_API_KEY}
+      - AWS_SQS_URL=https://sqs.us-east-1.amazonaws.com/052717076243/MyQueue
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+    depends_on:
+      redis:
+        condition: service_healthy
+      flag-service:
+        condition: service_started
+      targeting-service:
+        condition: service_started
+
+  # Serviço de Análise (Python)
+  analytics-service:
+    build:
+      context: ./analytics-service
+      dockerfile: Dockerfile
+    container_name: togglemaster-analytics-service
+    ports:
+      - "8005:8005"
+    environment:
+      - PORT=8005
+      - AWS_SQS_URL=https://sqs.us-east-1.amazonaws.com/052717076243/MyQueue
+      - AWS_DYNAMODB_TABLE=ToggleMasterAnalytics
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
+    depends_on:
+      evaluation-service:
+        condition: service_started
