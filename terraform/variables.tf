@@ -1,4 +1,4 @@
 variable "org_name" {
-  type        = string
-  default     = "jojo-bizarre-adventure"
+  type    = string
+  default = "jojo-bizarre-adventure"
 }
