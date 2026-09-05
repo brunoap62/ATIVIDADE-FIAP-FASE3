@@ -1,9 +1,4 @@
-resource "aws_s3_bucket" "my_bucket" {
-  bucket = "${var.org_name}-bucket-brsantos-iac-${terraform.workspace}"
-
-  tags = {
-    Name    = "primeiro-bucket"
-    Iac     = true
-    context = "${terraform.workspace}"
-  }
+module "s3" {
+  source         = "./modules/s3"
+  s3_bucket_name = "jojo-bizzarre-adventure-IAC"
 }
