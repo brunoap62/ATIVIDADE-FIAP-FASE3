@@ -21,7 +21,7 @@ module "cloudfront" {
 }
 
 module "sqs" {
-  source     = "./modules/sqs"
-  sqs_name   = "jojo-bizzarre-adventure-sqs"
+  source   = "./modules/sqs"
+  sqs_name = "jojo-bizzarre-adventure-sqs"
 
 }

@@ -14,6 +14,6 @@
 # nos outputs como `aws_s3_bucket.bucket.id` ou `aws_s3_bucket.bucket.bucket_regional_domain_name`.
 # ==============================================================================
 
-data "aws_s3_bucket" "bucket" {
-  bucket = "${var.s3_bucket_name}-${terraform.workspace}"
-}
+# data "aws_s3_bucket" "bucket" {
+#   bucket = "${var.s3_bucket_name}-${terraform.workspace}"
+# }

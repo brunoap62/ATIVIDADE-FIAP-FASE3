@@ -9,6 +9,6 @@
 # (como domain_name e id) diretamente do recurso, sem precisar desta consulta data.
 # ==============================================================================
 
-data "aws_cloudfront_distribution" "cloudfront" {
-  id = aws_cloudfront_distribution.cloudfront.id
-}
+# data "aws_cloudfront_distribution" "cloudfront" {
+#   id = aws_cloudfront_distribution.cloudfront.id
+# }
