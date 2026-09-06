@@ -23,5 +23,17 @@ module "cloudfront" {
 module "sqs" {
   source   = "./modules/sqs"
   sqs_name = "jojo-bizzarre-adventure-sqs"
+}
+
+
+module "ecr" {
+  source   = "./modules/ecr"
+  repository_names = [
+    "jojo/auth-service-${terraform.workspace}",
+    "jojo/flag-service-${terraform.workspace}",
+    "jojo/targeting-service-${terraform.workspace}",
+    "jojo/evaluation-service-${terraform.workspace}",
+    "jojo/analytics-service-${terraform.workspace}"
+  ]
 
 }

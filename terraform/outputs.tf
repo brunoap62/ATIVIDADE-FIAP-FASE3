@@ -20,3 +20,13 @@ output "cdn_domain" {
   sensitive   = false
   description = "The domain name corresponding to the CDN distribution."
 }
+
+    output "ecr_repository_urls" {
+      value       = module.ecr.repository_urls
+      description = "URLs dos repositórios ECR criados"
+    }
+  
+    output "ecr_repository_arns" {
+      value       = module.ecr.repository_arns
+      description = "ARNs dos repositórios ECR criados"
+    }
