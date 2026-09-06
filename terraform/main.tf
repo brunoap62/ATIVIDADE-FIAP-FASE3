@@ -24,7 +24,7 @@ module "eks" {
   vpc_id              = module.network.vpc_id
   subnet_ids          = module.network.private_subnet_ids
   node_instance_types = ["t3.medium"]
-  desired_size        = 2
+  desired_size        = 1
   min_size            = 1
   max_size            = 4
 }
@@ -44,6 +44,30 @@ module "redis" {
   engine_version        = "7.0"
 }
 
+# ==============================================================================
+# 5. Módulo de Banco de Dados NoSQL (AWS DynamoDB)
+# ==============================================================================
+module "dynamodb" {
+  source = "./modules/dynamodb"
+
+  table_name   = "ToggleMasterAnalytics"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "event_id"
+}
+# ==============================================================================
+# 3. Módulo de Bancos de Dados Relacionais (AWS RDS PostgreSQL)
+# ==============================================================================
+module "rds" {
+  source = "./modules/rds"
+
+  project_name          = var.project_name
+  vpc_id                = module.network.vpc_id
+  subnet_ids            = module.network.private_subnet_ids
+  eks_security_group_id = module.eks.cluster_security_group_id
+  db_instance_class     = "db.t3.micro"
+  db_username           = var.db_username
+  db_password           = var.db_password
+}
 module "s3" {
   source         = "./modules/s3"
   s3_bucket_name = "jojo-bizzarre-adventure-iac"

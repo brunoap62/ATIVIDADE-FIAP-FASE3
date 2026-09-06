@@ -72,7 +72,43 @@ output "sqs_queue_arn" {
 }
 
 # ------------------------------------------------------------------------------
-# 4. Storage & Registro de Containers (S3 & ECR)
+# 4. Banco de Dados Relacional (RDS PostgreSQL - 100% Free Tier)
+# ------------------------------------------------------------------------------
+output "rds_endpoint" {
+  description = "Endpoint completo de conexão do banco RDS PostgreSQL"
+  value       = module.rds.db_endpoint
+}
+
+output "rds_address" {
+  description = "Host do banco RDS PostgreSQL"
+  value       = module.rds.db_address
+}
+
+output "rds_port" {
+  description = "Porta do banco RDS PostgreSQL"
+  value       = module.rds.db_port
+}
+
+output "rds_database_name" {
+  description = "Nome do banco de dados inicial no RDS"
+  value       = module.rds.db_name
+}
+
+# ------------------------------------------------------------------------------
+# 5. Banco de Dados NoSQL (DynamoDB)
+# ------------------------------------------------------------------------------
+output "dynamodb_table_name" {
+  description = "Nome da tabela DynamoDB para analytics"
+  value       = module.dynamodb.table_name
+}
+
+output "dynamodb_table_arn" {
+  description = "ARN da tabela DynamoDB para analytics"
+  value       = module.dynamodb.table_arn
+}
+
+# ------------------------------------------------------------------------------
+# 6. Storage & Registro de Containers (S3 & ECR)
 # ------------------------------------------------------------------------------
 output "s3_bucket_name" {
   description = "Nome do bucket S3"
