@@ -20,7 +20,7 @@ module "eks" {
 
   project_name        = var.project_name
   cluster_name        = var.cluster_name
-  cluster_version     = "1.29"
+  cluster_version     = "1.31"
   vpc_id              = module.network.vpc_id
   subnet_ids          = module.network.private_subnet_ids
   node_instance_types = ["t3.medium"]
