@@ -12,6 +12,38 @@ module "network" {
   private_subnet_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
 }
 
+# ==============================================================================
+# 2. Módulo do Cluster Kubernetes (EKS)
+# ==============================================================================
+module "eks" {
+  source = "./modules/eks"
+
+  project_name        = var.project_name
+  cluster_name        = var.cluster_name
+  cluster_version     = "1.29"
+  vpc_id              = module.network.vpc_id
+  subnet_ids          = module.network.private_subnet_ids
+  node_instance_types = ["t3.medium"]
+  desired_size        = 2
+  min_size            = 1
+  max_size            = 4
+}
+
+
+# ==============================================================================
+# 3. Módulo de Bancos de Dados & Cache (RDS, ElastiCache, DynamoDB)
+# ==============================================================================
+module "redis" {
+  source = "./modules/redis"
+
+  project_name          = var.project_name
+  vpc_id                = module.network.vpc_id
+  subnet_ids            = module.network.private_subnet_ids
+  eks_security_group_id = module.eks.cluster_security_group_id
+  node_type             = "cache.t3.micro"
+  engine_version        = "7.0"
+}
+
 module "s3" {
   source         = "./modules/s3"
   s3_bucket_name = "jojo-bizzarre-adventure-iac"
@@ -20,19 +52,7 @@ module "s3" {
   }
 }
 
-module "cloudfront" {
-  source             = "./modules/cloudfront"
-  origin_id          = module.s3.bucket_id
-  bucket_domain_name = module.s3.bucket_domain_name
-  cdn_price_class    = "PriceClass_200"
-  cdn_tags = {
-    Iac = true
-  }
 
-  depends_on = [
-    module.s3
-  ]
-}
 
 module "sqs" {
   source   = "./modules/sqs"

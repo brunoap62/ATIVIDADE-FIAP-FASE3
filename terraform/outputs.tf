@@ -15,12 +15,6 @@ output "s3_bucket_name" {
   description = "The name of the S3 bucket that is used to store the static website content."
 }
 
-output "cdn_domain" {
-  value       = module.cloudfront.cdn_domain_name
-  sensitive   = false
-  description = "The domain name corresponding to the CDN distribution."
-}
-
 output "ecr_repository_urls" {
   value       = module.ecr.repository_urls
   description = "URLs dos repositórios ECR criados"
@@ -50,4 +44,10 @@ output "private_subnet_ids" {
 output "vpc_cidr" {
   description = "Bloco CIDR da VPC"
   value       = module.network.vpc_cidr
+}
+
+
+output "redis_endpoint" {
+  description = "Endpoint do cluster ElastiCache Redis"
+  value       = module.redis.redis_endpoint
 }
