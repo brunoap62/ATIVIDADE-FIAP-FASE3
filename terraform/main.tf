@@ -20,13 +20,13 @@ module "cloudfront" {
   ]
 }
 
-module "sqs" {
-  source     = "terraform-aws-modules/sqs/aws"
-  name       = "example"
-  create_dlq = true
+# module "sqs" {
+#   source     = "terraform-aws-modules/sqs/aws"
+#   name       = "jojo-bizzarre-adventure-sqs"
+#   create_dlq = true
 
 
-  tags = {
-    Iac = true
-  }
-}
+#   tags = {
+#     Iac = true
+#   }
+# }
