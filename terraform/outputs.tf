@@ -21,12 +21,33 @@ output "cdn_domain" {
   description = "The domain name corresponding to the CDN distribution."
 }
 
-    output "ecr_repository_urls" {
-      value       = module.ecr.repository_urls
-      description = "URLs dos repositórios ECR criados"
-    }
-  
-    output "ecr_repository_arns" {
-      value       = module.ecr.repository_arns
-      description = "ARNs dos repositórios ECR criados"
-    }
+output "ecr_repository_urls" {
+  value       = module.ecr.repository_urls
+  description = "URLs dos repositórios ECR criados"
+}
+
+output "ecr_repository_arns" {
+  value       = module.ecr.repository_arns
+  description = "ARNs dos repositórios ECR criados"
+}
+
+
+output "vpc_id" {
+  description = "ID da VPC criada"
+  value       = aws_vpc.main.id
+}
+
+output "public_subnet_ids" {
+  description = "IDs das subnets públicas"
+  value       = aws_subnet.public[*].id
+}
+
+output "private_subnet_ids" {
+  description = "IDs das subnets privadas"
+  value       = aws_subnet.private[*].id
+}
+
+output "vpc_cidr" {
+  description = "Bloco CIDR da VPC"
+  value       = aws_vpc.main.cidr_block
+}
