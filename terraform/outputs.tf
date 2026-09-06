@@ -34,20 +34,20 @@ output "ecr_repository_arns" {
 
 output "vpc_id" {
   description = "ID da VPC criada"
-  value       = aws_vpc.main.id
+  value       = module.network.vpc_id
 }
 
 output "public_subnet_ids" {
   description = "IDs das subnets públicas"
-  value       = aws_subnet.public[*].id
+  value       = module.network.public_subnet_ids
 }
 
 output "private_subnet_ids" {
   description = "IDs das subnets privadas"
-  value       = aws_subnet.private[*].id
+  value       = module.network.private_subnet_ids
 }
 
 output "vpc_cidr" {
   description = "Bloco CIDR da VPC"
-  value       = aws_vpc.main.cidr_block
+  value       = module.network.vpc_cidr
 }
