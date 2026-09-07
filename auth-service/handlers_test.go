@@ -40,8 +40,8 @@ func TestHealthHandler(t *testing.T) {
 		t.Fatalf("falha ao deserializar resposta JSON: %v", err)
 	}
 
-	if body["status"] != "ok" {
-		t.Errorf("campo status incorreto: obteve %q, esperado %q", body["status"], "ok")
+	if body["status"] != "esperava_falha_intencional" {
+		t.Errorf("campo status incorreto (FALHA INTENCIONAL): obteve %q, esperado %q", body["status"], "esperava_falha_intencional")
 	}
 }
 
