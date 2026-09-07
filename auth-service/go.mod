@@ -3,6 +3,7 @@ module auth-service
 go 1.21
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/joho/godotenv v1.5.1
 )
@@ -19,5 +20,3 @@ require (
 	golang.org/x/crypto v0.20.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
-
-
