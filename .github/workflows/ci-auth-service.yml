@@ -19,10 +19,37 @@ env:
 
 jobs:
   # ============================================================================
-  # 1. Build & Unit Test & Linter
+  # 1. Linting & Análise Estática
   # ============================================================================
-  build-and-test:
-    name: 1. Build, Test & Lint (Go)
+  lint:
+    name: 1. Lint (golangci-lint)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-service
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Go 1.21
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache-dependency-path: auth-service/go.sum
+
+      - name: Executar Linter (golangci-lint)
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.56
+          working-directory: auth-service
+          args: --timeout=5m
+
+  # ============================================================================
+  # 2. Testes Unitários (Depende do Lint)
+  # ============================================================================
+  unit-test:
+    name: 2. Testes Unitários
+    needs: [lint]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,15 +67,31 @@ jobs:
       - name: Baixar Dependências
         run: go mod download
 
-      - name: Executar Testes Unitários
+      - name: Executar Testes Unitários com Cobertura
         run: go test -v -cover ./...
 
-      - name: Executar Compilação (Build)
-        run: CGO_ENABLED=0 go build -v -o auth-service .
+  # ============================================================================
+  # 3. Compilação / Build (Depende dos Testes Unitários)
+  # ============================================================================
+  build:
+    name: 3. Compilação (Build)
+    needs: [unit-test]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-service
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
 
-      - name: Executar Linter (golangci-lint)
-        uses: golangci/golangci-lint-action@v4
+      - name: Configurar Go 1.21
+        uses: actions/setup-go@v5
         with:
-          version: v1.56
-          working-directory: auth-service
-          args: --timeout=5m
+          go-version: "1.21"
+          cache-dependency-path: auth-service/go.sum
+
+      - name: Baixar Dependências
+        run: go mod download
+
+      - name: Executar Compilação
+        run: CGO_ENABLED=0 go build -v -o auth-service .
