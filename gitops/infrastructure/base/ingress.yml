@@ -1,0 +1,56 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: toggle-ingress
+  namespace: toggle-master
+  annotations:
+    # Captura o que está dentro do (.*) e substitui na requisição que vai para o Pod
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          # Ex: localhost/auth/validate -> envia /validate para o pod
+          - path: /auth/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8001
+
+          # CORRIGIDO: Ex: localhost/flags/create -> envia /create para o pod
+          - path: /flags/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: flag-service
+                port:
+                  number: 8002
+
+          # CORRIGIDO: Ex: localhost/flags/create -> envia /create para o pod
+          - path: /targeting/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: targeting-service
+                port:
+                  number: 8003
+
+          # CORRIGIDO: Ex: localhost/flags/create -> envia /create para o pod
+          - path: /evaluate-api/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: evaluation-service
+                port:
+                  number: 8004
+
+          - path: /analytics-api/?(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: analytics-service
+                port:
+                  number: 8005
