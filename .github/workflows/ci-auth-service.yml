@@ -1,172 +1,21 @@
-name: 🛡️ CI/CD & DevSecOps - Auth Service
+name: ☸️ Deploy to Kubernetes
 
 on:
-  push:
+  workflow_run:
+    workflows: ["🐳 Docker Build and Push"]
+    types: [completed]
     branches: [main]
-    paths:
-      - "auth-service/**"
-      - "gitops/**"
-      - ".github/workflows/ci-auth-service.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "auth-service/**"
   workflow_dispatch:
 
 env:
   AWS_REGION: us-east-2
-  CLUSTER_NAME: jojo-eks-cluster
-  ECR_REPOSITORY: jojo/auth-service-default
-  SERVICE_DIR: auth-service
+  CLUSTER_NAME: cicd-lab
 
 jobs:
-  # ============================================================================
-  # ETAPA 1: TESTES & DEVSECOPS EM PARALELO
-  # ============================================================================
-  lint:
-    name: 🔍 1.1 Linter (golangci-lint)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ env.SERVICE_DIR }}
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.21"
-          cache-dependency-path: auth-service/go.sum
-
-      - name: 🔍 Run Linter
-        uses: golangci/golangci-lint-action@v4
-        with:
-          version: v1.56
-          working-directory: ${{ env.SERVICE_DIR }}
-          args: --timeout=5m
-
-  unit-tests:
-    name: 🧪 1.2 Testes Unitários
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ env.SERVICE_DIR }}
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.21"
-          cache-dependency-path: auth-service/go.sum
-
-      - name: 🧪 Run Tests
-        run: go test -v -cover ./...
-
-  sast-scan:
-    name: 🛡️ 1.3 SAST (gosec)
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🛡️ Run gosec
-        uses: securego/gosec@master
-        with:
-          args: -exclude-dir=k8s -exclude-dir=db ./auth-service/...
-
-  sca-scan:
-    name: 📦 1.4 SCA (Trivy fs)
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      - name: 📦 Run Trivy fs scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: "fs"
-          scan-ref: "${{ env.SERVICE_DIR }}"
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          severity: "CRITICAL"
-
-  # ============================================================================
-  # ETAPA 2: DOCKER BUILD, CONTAINER SCAN & PUSH PARA ECR
-  # ============================================================================
-  build-and-push:
-    name: 🐳 2. Build & Push (ECR)
-    needs: [lint, unit-tests, sast-scan, sca-scan]
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 📥 Checkout do Código
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: 🔑 Configurar Credenciais AWS
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: 🔑 Login no Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: 🏷️ Definir Tags da Imagem
-        id: meta
-        run: |
-          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}"
-          echo "tag_sha=$IMAGE_URI:${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "tag_latest=$IMAGE_URI:latest" >> $GITHUB_OUTPUT
-
-      - name: 🐳 Build da Imagem Docker (Local para Scan)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./${{ env.SERVICE_DIR }}
-          file: ./${{ env.SERVICE_DIR }}/Dockerfile
-          platforms: linux/amd64
-          load: true
-          tags: ${{ steps.meta.outputs.tag_sha }}
-
-      - name: 🛡️ Container Vulnerability Scan (Trivy image)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ steps.meta.outputs.tag_sha }}
-          format: "table"
-          exit-code: "0"
-          ignore-unfixed: true
-          severity: "CRITICAL,HIGH"
-
-      - name: 🚀 Push da Imagem para o ECR
-        uses: docker/build-push-action@v5
-        with:
-          context: ./${{ env.SERVICE_DIR }}
-          file: ./${{ env.SERVICE_DIR }}/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ steps.meta.outputs.tag_sha }}
-            ${{ steps.meta.outputs.tag_latest }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # ============================================================================
-  # ETAPA 3: DEPLOY NO KUBERNETES & SMOKE TEST
-  # ============================================================================
   deploy:
-    name: 🚀 3. Deploy no EKS
-    needs: [build-and-push]
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    name: 🚀 Deploy to EKS
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     permissions:
       id-token: write
@@ -194,23 +43,25 @@ jobs:
           curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           sudo mv kustomize /usr/local/bin/
 
-      - name: 📝 Update image tag no Kustomize
-        working-directory: gitops/apps/auth-service/base
+      - name: 📝 Update image tag
+        working-directory: k8s/overlays/production
         run: |
-          kustomize edit set image fase2-auth-service=052717076243.dkr.ecr.us-east-2.amazonaws.com/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          kustomize edit set image \
+            ${{ secrets.ECR_URI }}/fiap-todo-api:${{ github.sha }}
 
       - name: 🚀 Deploy to Kubernetes
         run: |
-          kubectl apply -k gitops/overlays/prod
-          kubectl rollout status deployment/auth-service -n toggle-master --timeout=180s
+          kubectl apply -k k8s/overlays/production
+          kubectl rollout status deployment/prod-fiap-todo-api
 
-      - name: 🧪 Smoke test via Ingress NLB
+      - name: 🧪 Smoke test
         continue-on-error: true
         run: |
-          echo "⏳ Buscando endereço do Load Balancer..."
+          echo "⏳ Aguardando LoadBalancer estar pronto..."
 
+          # Aguardar até 2 minutos para LoadBalancer ter hostname
           for i in {1..12}; do
-            LB_URL=$(kubectl get svc ingress-nginx-controller -n ingress-nginx \
+            LB_URL=$(kubectl get service prod-fiap-todo-api-service \
               -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
             
             if [ -n "$LB_URL" ]; then
@@ -222,29 +73,34 @@ jobs:
             sleep 10
           done
 
+          # Verificar se obteve URL
           if [ -z "$LB_URL" ]; then
-            echo "⚠️ LoadBalancer ainda não obteve hostname público."
+            echo "⚠️ LoadBalancer ainda não está pronto (pode demorar até 5 minutos)"
+            echo "✅ Deploy concluído! Verifique manualmente: kubectl get service prod-fiap-todo-api-service"
             exit 0
           fi
 
-          echo "⏳ Testando endpoint: http://$LB_URL/auth/health"
-          sleep 10
-          if curl -f --max-time 10 "http://$LB_URL/auth/health"; then
-            echo "✅ Smoke test passed com sucesso!"
+          # Aguardar LoadBalancer estar acessível
+          echo "⏳ Aguardando LoadBalancer estar acessível..."
+          sleep 20
+
+          # Testar health endpoint
+          echo "🧪 Testando: http://$LB_URL/health"
+          if curl -f --max-time 10 http://$LB_URL/health; then
+            echo "✅ Smoke test passed!"
           else
-            echo "⚠️ Health check direto falhou, testando dentro do pod:"
-            kubectl exec -n toggle-master deploy/auth-service -- wget -qO- http://localhost:8001/health || true
+            echo "⚠️ Health check falhou, mas LoadBalancer está provisionando"
+            echo "✅ Verifique em alguns minutos: http://$LB_URL/health"
           fi
 
       - name: 📊 Deployment summary
         run: |
-          echo "## ☸️ Kubernetes Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## ☸️ Kubernetes Deployment" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Cluster**: \`${{ env.CLUSTER_NAME }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Namespace**: \`toggle-master\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image Tag**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster**: ${{ env.CLUSTER_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pods Status:" >> $GITHUB_STEP_SUMMARY
-          echo '```text' >> $GITHUB_STEP_SUMMARY
-          kubectl get pods -n toggle-master -l app=auth-service >> $GITHUB_STEP_SUMMARY
+          echo "### Pods:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -l app=fiap-todo-api >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

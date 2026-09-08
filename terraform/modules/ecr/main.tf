@@ -2,6 +2,7 @@ resource "aws_ecr_repository" "repos" {
   count                = length(var.repository_names)
   name                 = var.repository_names[count.index]
   image_tag_mutability = var.image_tag_mutability
+  force_delete         = true
 
   # DevSecOps: Habilita escaneamento de vulnerabilidades no push
   image_scanning_configuration {
@@ -10,9 +11,10 @@ resource "aws_ecr_repository" "repos" {
 
   tags = {
     Name = var.repository_names[count.index]
-    Iac = true
+    Iac  = true
   }
 }
+
 
 
 # ==============================================================================
