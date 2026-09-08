@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: auth-service
+  namespace: toggle-master
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: fase2-auth-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: auth-service-config
+            - secretRef:
+                name: auth-service-secret
+          startupProbe: # Testa se a aplicação está pronta para receber requisições
+            httpGet:
+              path: /health
+              port: 8001
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 10
+            initialDelaySeconds: 10
+          readinessProbe: # Verificar saude de recursos com REDIZ / PG
+            httpGet:
+              path: /health
+              port: 8001
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 15
+            initialDelaySeconds: 5
+          livenessProbe: # Verifica se a aplicação está viva
+            httpGet:
+              path: /health
+              port: 8001
+            failureThreshold: 5
+            successThreshold: 1
+            periodSeconds: 10
+            timeoutSeconds: 1
+            initialDelaySeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+      imagePullSecrets:
+        - name: ecr-registry-key
