@@ -8,3 +8,17 @@ resources:
   - deployment.yml
   - secret.yml
   - service.yml
+
+# ============================================
+# IMAGENS
+# ============================================
+# Configuração de imagens Docker
+# Permite substituir tags sem modificar os YAMLs
+# O "name" deve corresponder ao placeholder no deployment.yaml
+# O "newName" é a imagem real no ECR
+images:
+  - name: fase2-auth-service # Nome exato que está no base/deployment.yml
+    newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/fiap/auth-service # URI real do ECR
+    newTag: latest # Tag da imagem (será substituída no CI/CD)
+
+
