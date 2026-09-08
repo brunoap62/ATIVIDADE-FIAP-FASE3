@@ -33,70 +33,70 @@ module "eks" {
 }
 
 # ==============================================================================
-# 3. Módulo de Banco de Dados Relacional (AWS RDS PostgreSQL)
+# 3. Módulo de Banco de Dados Relacional (AWS RDS PostgreSQL) [COMENTADO]
 # ==============================================================================
 # Banco de dados relacional com acesso liberado exclusivamente para os nós do EKS.
 # As dependências dos módulos 'network' e 'eks' são resolvidas automaticamente.
-module "rds" {
-  source = "./modules/rds"
-
-  project_name          = var.project_name
-  vpc_id                = module.network.vpc_id
-  subnet_ids            = module.network.private_subnet_ids
-  eks_security_group_id = module.eks.cluster_security_group_id
-  db_instance_class     = "db.t3.micro"
-  db_username           = var.db_username
-  db_password           = var.db_password
-}
+# module "rds" {
+#   source = "./modules/rds"
+# 
+#   project_name          = var.project_name
+#   vpc_id                = module.network.vpc_id
+#   subnet_ids            = module.network.private_subnet_ids
+#   eks_security_group_id = module.eks.cluster_security_group_id
+#   db_instance_class     = "db.t3.micro"
+#   db_username           = var.db_username
+#   db_password           = var.db_password
+# }
 
 # ==============================================================================
-# 4. Módulo de Cache em Memória (AWS ElastiCache Redis)
+# 4. Módulo de Cache em Memória (AWS ElastiCache Redis) [COMENTADO]
 # ==============================================================================
 # Cache em memória e controle de sessão/flags com acesso seguro via SG do EKS.
 # As dependências dos módulos 'network' e 'eks' são resolvidas automaticamente.
-module "redis" {
-  source = "./modules/redis"
-
-  project_name          = var.project_name
-  vpc_id                = module.network.vpc_id
-  subnet_ids            = module.network.private_subnet_ids
-  eks_security_group_id = module.eks.cluster_security_group_id
-  node_type             = "cache.t3.micro"
-  engine_version        = "7.0"
-}
+# module "redis" {
+#   source = "./modules/redis"
+# 
+#   project_name          = var.project_name
+#   vpc_id                = module.network.vpc_id
+#   subnet_ids            = module.network.private_subnet_ids
+#   eks_security_group_id = module.eks.cluster_security_group_id
+#   node_type             = "cache.t3.micro"
+#   engine_version        = "7.0"
+# }
 
 # ==============================================================================
-# 5. Módulo de Banco de Dados NoSQL (AWS DynamoDB)
+# 5. Módulo de Banco de Dados NoSQL (AWS DynamoDB) [COMENTADO]
 # ==============================================================================
 # Tabela NoSQL gerenciada e serverless (sob demanda) para analytics de eventos.
-module "dynamodb" {
-  source = "./modules/dynamodb"
-
-  table_name   = "ToggleMasterAnalytics"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "event_id"
-}
+# module "dynamodb" {
+#   source = "./modules/dynamodb"
+# 
+#   table_name   = "ToggleMasterAnalytics"
+#   billing_mode = "PAY_PER_REQUEST"
+#   hash_key     = "event_id"
+# }
 
 # ==============================================================================
-# 6. Módulo de Mensageria Assíncrona (AWS SQS)
+# 6. Módulo de Mensageria Assíncrona (AWS SQS) [COMENTADO]
 # ==============================================================================
 # Fila SQS para desacoplamento e comunicação assíncrona entre os microsserviços.
-module "sqs" {
-  source   = "./modules/sqs"
-  sqs_name = "jojo-bizzarre-adventure-sqs"
-}
+# module "sqs" {
+#   source   = "./modules/sqs"
+#   sqs_name = "jojo-bizzarre-adventure-sqs"
+# }
 
 # ==============================================================================
-# 7. Módulo de Armazenamento de Objetos (AWS S3)
+# 7. Módulo de Armazenamento de Objetos (AWS S3) [COMENTADO]
 # ==============================================================================
 # Bucket S3 configurado por workspace para armazenamento estático e artefatos de IaC.
-module "s3" {
-  source         = "./modules/s3"
-  s3_bucket_name = "jojo-bizzarre-adventure-iac"
-  s3_tags = {
-    Iac = true
-  }
-}
+# module "s3" {
+#   source         = "./modules/s3"
+#   s3_bucket_name = "jojo-bizzarre-adventure-iac"
+#   s3_tags = {
+#     Iac = true
+#   }
+# }
 
 # ==============================================================================
 # 8. Módulo de Registro de Contêineres (AWS ECR)
@@ -111,4 +111,17 @@ module "ecr" {
     "jojo/evaluation-service-${terraform.workspace}",
     "jojo/analytics-service-${terraform.workspace}"
   ]
+}
+
+# ==============================================================================
+# 9. Módulo GitOps / CD (ArgoCD)
+# ==============================================================================
+# Instalação do ArgoCD via Helm Chart gerenciado diretamente pelo Terraform no cluster EKS.
+module "argocd" {
+  source = "./modules/argocd"
+
+  namespace           = "argocd"
+  server_service_type = "LoadBalancer"
+
+  depends_on = [module.eks]
 }
