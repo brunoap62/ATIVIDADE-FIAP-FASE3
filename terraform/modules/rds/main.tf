@@ -19,6 +19,7 @@ resource "aws_security_group" "rds" {
     from_port       = 5432
     to_port         = 5432
     protocol        = "tcp"
+    cidr_blocks     = ["10.0.0.0/16"]
     security_groups = [var.eks_security_group_id]
   }
 
@@ -48,7 +49,7 @@ resource "aws_db_instance" "main" {
   max_allocated_storage  = 0
   storage_type           = "gp2"
   
-  db_name                = "app_db"
+  db_name                = "auth_db"
   username               = var.db_username
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.rds.name

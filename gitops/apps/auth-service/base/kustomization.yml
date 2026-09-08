@@ -18,7 +18,8 @@ resources:
 # O "newName" é a imagem real no ECR
 images:
   - name: fase2-auth-service # Nome exato que está no base/deployment.yml
-    newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/fiap/auth-service # URI real do ECR
-    newTag: latest # Tag da imagem (será substituída no CI/CD)
+    newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/jojo/auth-service-default # URI real do ECR
+    newTag: latest # Tag da imagem
+
 
 

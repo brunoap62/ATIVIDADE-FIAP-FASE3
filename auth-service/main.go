@@ -44,6 +44,11 @@ func main() {
 	}
 	defer db.Close()
 
+	// --- Inicialização Automática de Tabelas ---
+	if err := initDB(db); err != nil {
+		log.Fatalf("Erro ao inicializar tabelas do banco de dados: %v", err)
+	}
+
 	app := &App{
 		DB:         db,
 		MasterKey:  masterKey,
@@ -79,4 +84,28 @@ func connectDB(databaseURL string) (*sql.DB, error) {
 
 	log.Println("Conectado ao PostgreSQL com sucesso!")
 	return db, nil
+}
+
+// initDB cria a estrutura inicial de tabelas e seeds caso não existam
+func initDB(db *sql.DB) error {
+	query := `
+	CREATE TABLE IF NOT EXISTS api_keys (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(100) NOT NULL,
+		key_hash VARCHAR(64) NOT NULL UNIQUE, 
+		is_active BOOLEAN DEFAULT true,
+		created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+
+	INSERT INTO api_keys (name, key_hash) 
+	VALUES ('evaluation-service-key', '18b75b4dd04fc7a5c81044bfa796f653c09e97a61a5673d7f5663e9f87d0e377')
+	ON CONFLICT (key_hash) DO NOTHING;
+	`
+	_, err := db.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Tabela 'api_keys' e chaves padrão verificadas/criadas com sucesso!")
+	return nil
 }

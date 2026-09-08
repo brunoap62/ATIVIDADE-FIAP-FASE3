@@ -33,21 +33,22 @@ module "eks" {
 }
 
 # ==============================================================================
-# 3. Módulo de Banco de Dados Relacional (AWS RDS PostgreSQL) [COMENTADO]
+# 3. Módulo de Banco de Dados Relacional (AWS RDS PostgreSQL)
 # ==============================================================================
 # Banco de dados relacional com acesso liberado exclusivamente para os nós do EKS.
 # As dependências dos módulos 'network' e 'eks' são resolvidas automaticamente.
-# module "rds" {
-#   source = "./modules/rds"
-# 
-#   project_name          = var.project_name
-#   vpc_id                = module.network.vpc_id
-#   subnet_ids            = module.network.private_subnet_ids
-#   eks_security_group_id = module.eks.cluster_security_group_id
-#   db_instance_class     = "db.t3.micro"
-#   db_username           = var.db_username
-#   db_password           = var.db_password
-# }
+module "rds" {
+  source = "./modules/rds"
+
+  project_name          = var.project_name
+  vpc_id                = module.network.vpc_id
+  subnet_ids            = module.network.private_subnet_ids
+  eks_security_group_id = module.eks.cluster_security_group_id
+  db_instance_class     = "db.t3.micro"
+  db_username           = var.db_username
+  db_password           = var.db_password
+}
+
 
 # ==============================================================================
 # 4. Módulo de Cache em Memória (AWS ElastiCache Redis) [COMENTADO]
