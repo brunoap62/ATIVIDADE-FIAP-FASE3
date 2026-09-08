@@ -157,3 +157,21 @@ output "argocd_admin_password" {
   description = "Senha inicial do usuário admin do ArgoCD gerada automaticamente"
   value       = module.argocd.admin_password
 }
+
+# ------------------------------------------------------------------------------
+# 8. Ingress Controller (Ingress NGINX)
+# ------------------------------------------------------------------------------
+output "ingress_nginx_namespace" {
+  description = "Namespace do Ingress NGINX"
+  value       = module.ingress_nginx.namespace
+}
+
+output "ingress_nginx_chart_version" {
+  description = "Versão do chart do Ingress NGINX instalado"
+  value       = module.ingress_nginx.chart_version
+}
+
+output "ingress_load_balancer_url" {
+  description = "URL pública de entrada do Ingress NGINX gerada pelo Network Load Balancer da AWS"
+  value       = module.ingress_nginx.load_balancer_hostname != "" ? "http://${module.ingress_nginx.load_balancer_hostname}" : "Aguardando atribuição do Load Balancer pelo EKS..."
+}

@@ -125,3 +125,16 @@ module "argocd" {
 
   depends_on = [module.eks]
 }
+
+# ==============================================================================
+# 10. Módulo Ingress Controller (Ingress NGINX + AWS NLB)
+# ==============================================================================
+# Instalação do Ingress NGINX via Helm Chart para gerenciar o Load Balancer e roteamento HTTP/HTTPS.
+module "ingress_nginx" {
+  source = "./modules/ingress-nginx"
+
+  namespace     = "ingress-nginx"
+  chart_version = "4.12.0"
+
+  depends_on = [module.eks]
+}

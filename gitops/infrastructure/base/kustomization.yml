@@ -2,6 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+  # Metrics Server para habilitar coleta de métricas de CPU/Memória e HPA
+  - https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
   - namespace.yml
   - secrets-global-aws.yml
   - ingress.yml
