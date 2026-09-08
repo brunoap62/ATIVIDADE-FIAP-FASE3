@@ -2,6 +2,8 @@
 .env
 **/.env
 *.env
+*.pdf
+*.old
 DUVIDAS_TECHCHALLANGE.MD
 
 # Terraform
