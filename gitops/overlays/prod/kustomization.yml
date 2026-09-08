@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # 1. Infraestrutura base (Namespace, Ingress, Secrets globais)
+  - ../../infrastructure/overlays/prod
+
+  # 2. Microsserviços
+  - ../../apps/auth-service/overlays/prod
+  # Adicione os próximos microsserviços aqui conforme forem criados:
+  # - ../../apps/flag-service/overlays/prod
+  # - ../../apps/targeting-service/overlays/prod
+  # - ../../apps/evaluation-service/overlays/prod
+  # - ../../apps/analytics-service/overlays/prod
