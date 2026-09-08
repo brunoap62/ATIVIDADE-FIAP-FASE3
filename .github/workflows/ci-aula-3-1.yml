@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: ${{ env.AWS_REGION }}
   ECR_REPOSITORY: fiap/auth-service
 
 jobs:
