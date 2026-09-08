@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 env:
+  AWS_REGION: us-east-2
   ECR_REPOSITORY: fiap/auth-service
 
 jobs:
@@ -44,7 +45,8 @@ jobs:
       - name: 🐳 Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./auth-service
+          file: ./auth-service/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64
