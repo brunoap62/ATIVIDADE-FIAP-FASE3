@@ -8,7 +8,7 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  ECR_REPOSITORY: fiap/auth-service
+  ECR_REPOSITORY: jojo/auth-service-default
 
 jobs:
   build-and-push:
