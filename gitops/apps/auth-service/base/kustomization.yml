@@ -20,4 +20,4 @@ resources:
 images:
 - name: fase2-auth-service
   newName: /super-app/auth-service-default
-  newTag: 6ef576c329488f581d029013e2f426e1eeefc02e
+  newTag: ecef8403757748dc74b8ef035230dd3dc47458d0
