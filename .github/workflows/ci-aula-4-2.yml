@@ -103,16 +103,28 @@ jobs:
           sudo mv kustomize /usr/local/bin/
           kustomize version
 
+      - name: 🔑 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔐 Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: 📝 Update image tag in kustomization
         env:
-          ECR_REGISTRY: ${{ needs.build-and-push.outputs.ecr-registry }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry || needs.build-and-push.outputs.ecr-registry }}
           IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
         run: |
           cd gitops/apps/auth-service/base
 
-          echo "🔄 Updating image tag to: $IMAGE_TAG"
+          echo "🔄 Updating image tag to: $IMAGE_TAG (Registry: $ECR_REGISTRY)"
           kustomize edit set image \
             fase2-auth-service=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
 
           echo "✅ Kustomization updated"
           cat kustomization.yml
