@@ -47,7 +47,7 @@ sequenceDiagram
     RDS-->>TF: Retorna Endpoint real (ex: dragonball-db.xyz.rds.amazonaws.com)
     
     Note over TF,SSM: Montagem automatica da DATABASE_URL
-    TF->>SSM: Cria parâmetro SecureString (/dragonball/prod/auth-service/database_url)
+    TF->>SSM: Cria parâmetro SecureString (/auth-service/database_url)
     
     Note over ESO,SSM: Autenticação segura via IAM Role / IRSA (sem senhas estáticas)
     ESO->>SSM: Consulta parâmetro via API AWS
@@ -118,7 +118,7 @@ spec:
   data:
     - secretKey: DATABASE_URL
       remoteRef:
-        key: /dragonball/prod/auth-service/database_url
+        key: /auth-service/database_url
 ```
 
 ---

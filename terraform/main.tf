@@ -146,7 +146,7 @@ module "ingress_nginx" {
 # ==============================================================================
 # Armazena connection strings computadas e chaves criptografadas via AWS KMS.
 resource "aws_ssm_parameter" "auth_service_database_url" {
-  name        = "/${var.project_name}/prod/auth-service/database_url"
+  name        = "/auth-service/database_url"
   description = "Connection string do RDS PostgreSQL para o auth-service com SSL habilitado"
   type        = "SecureString"
   value       = "postgres://${module.rds.db_username}:${var.db_password}@${module.rds.db_endpoint}/${module.rds.db_name}?sslmode=require"
@@ -161,7 +161,7 @@ resource "aws_ssm_parameter" "auth_service_database_url" {
 }
 
 resource "aws_ssm_parameter" "auth_service_master_key" {
-  name        = "/${var.project_name}/prod/auth-service/master_key"
+  name        = "/auth-service/master_key"
   description = "Chave mestre de administracao para criacao de API keys no auth-service"
   type        = "SecureString"
   value       = var.master_key

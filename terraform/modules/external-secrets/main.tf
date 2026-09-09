@@ -23,7 +23,7 @@ resource "aws_iam_policy" "external_secrets_ssm" {
           "ssm:GetParametersByPath",
           "ssm:DescribeParameters"
         ]
-        Resource = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${var.project_name}/*"
+        Resource = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/*"
       },
       {
         Effect = "Allow"
