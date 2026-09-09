@@ -11,10 +11,13 @@ permissions:
   contents: write
 
 env:
-  PROJECT_NAME: ${{ vars.PROJECT_NAME }}
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
-  CLUSTER_NAME: ${{ vars.PROJECT_NAME }}-eks-cluster
-  ECR_REPOSITORY: ${{ vars.PROJECT_NAME }}/auth-service-default
+  PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  CLUSTER_NAME: ${{ secrets.PROJECT_NAME }}-eks-cluster
+  ECR_REPOSITORY: ${{ secrets.PROJECT_NAME }}/auth-service-default
+
+
+
   SERVICE_DIR: auth-service
   ARGOCD_APP_FILE: gitops/argocd-app-prod.yml
   GIT_REPO_URL: git@github.com:${{ github.repository }}.git
