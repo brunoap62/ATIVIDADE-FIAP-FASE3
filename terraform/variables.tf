@@ -28,3 +28,10 @@ variable "db_password" {
   sensitive   = true
   default     = "SenhaSuperSegura123!"
 }
+
+variable "master_key" {
+  description = "Chave mestre de administracao para o auth-service"
+  type        = string
+  sensitive   = true
+  default     = "admin-secreto-123"
+}

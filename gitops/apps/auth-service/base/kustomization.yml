@@ -6,8 +6,9 @@ namespace: toggle-master
 resources:
 - configmap.yml
 - deployment.yml
-- secret.yml
+- externalsecret.yml
 - service.yml
+
 
 # ============================================
 # IMAGENS

@@ -176,3 +176,21 @@ output "ingress_load_balancer_url" {
   description = "URL pública de entrada do Ingress NGINX gerada pelo Network Load Balancer da AWS"
   value       = module.ingress_nginx.load_balancer_hostname != "" ? "http://${module.ingress_nginx.load_balancer_hostname}" : "Aguardando atribuição do Load Balancer pelo EKS..."
 }
+
+# ------------------------------------------------------------------------------
+# 9. External Secrets Operator & SSM
+# ------------------------------------------------------------------------------
+output "external_secrets_role_arn" {
+  description = "ARN da IAM Role associada ao External Secrets Operator via IRSA"
+  value       = module.external_secrets.iam_role_arn
+}
+
+output "ssm_database_url_param" {
+  description = "Nome do parametro SSM da database_url"
+  value       = aws_ssm_parameter.auth_service_database_url.name
+}
+
+output "ssm_master_key_param" {
+  description = "Nome do parametro SSM da master_key"
+  value       = aws_ssm_parameter.auth_service_master_key.name
+}

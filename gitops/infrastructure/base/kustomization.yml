@@ -6,4 +6,6 @@ resources:
   - https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
   - namespace.yml
   - secrets-global-aws.yml
+  - cluster-secret-store.yml
   - ingress.yml
+

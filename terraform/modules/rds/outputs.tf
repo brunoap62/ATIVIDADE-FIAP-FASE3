@@ -27,3 +27,9 @@ output "db_security_group_id" {
   description = "ID do security group do RDS"
   value       = aws_security_group.rds.id
 }
+
+output "db_username" {
+  description = "Usuário master do banco RDS PostgreSQL"
+  value       = aws_db_instance.main.username
+}
+

@@ -22,3 +22,9 @@ output "oidc_provider_arn" {
   description = "ARN do provedor OIDC para IRSA"
   value       = aws_iam_openid_connect_provider.eks.arn
 }
+
+output "oidc_provider_url" {
+  description = "URL do provedor OIDC para IRSA"
+  value       = aws_iam_openid_connect_provider.eks.url
+}
+

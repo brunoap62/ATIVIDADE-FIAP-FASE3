@@ -140,3 +140,50 @@ module "ingress_nginx" {
 
   depends_on = [module.eks]
 }
+
+# ==============================================================================
+# 11. Segredos e Parâmetros Criptografados (AWS SSM Parameter Store)
+# ==============================================================================
+# Armazena connection strings computadas e chaves criptografadas via AWS KMS.
+resource "aws_ssm_parameter" "auth_service_database_url" {
+  name        = "/${var.project_name}/prod/auth-service/database_url"
+  description = "Connection string do RDS PostgreSQL para o auth-service com SSL habilitado"
+  type        = "SecureString"
+  value       = "postgres://${module.rds.db_username}:${var.db_password}@${module.rds.db_endpoint}/${module.rds.db_name}?sslmode=require"
+
+  tags = {
+    Environment = "prod"
+    Service     = "auth-service"
+    ManagedBy   = "Terraform"
+  }
+
+  depends_on = [module.rds]
+}
+
+resource "aws_ssm_parameter" "auth_service_master_key" {
+  name        = "/${var.project_name}/prod/auth-service/master_key"
+  description = "Chave mestre de administracao para criacao de API keys no auth-service"
+  type        = "SecureString"
+  value       = var.master_key
+
+  tags = {
+    Environment = "prod"
+    Service     = "auth-service"
+    ManagedBy   = "Terraform"
+  }
+}
+
+# ==============================================================================
+# 12. Módulo External Secrets Operator (ESO via IRSA / OIDC)
+# ==============================================================================
+# Instala o operador ESO no EKS e configura IAM Role/Policy para sincronização automática.
+module "external_secrets" {
+  source = "./modules/external-secrets"
+
+  project_name      = var.project_name
+  aws_region        = var.aws_region
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.oidc_provider_url
+
+  depends_on = [module.eks]
+}
