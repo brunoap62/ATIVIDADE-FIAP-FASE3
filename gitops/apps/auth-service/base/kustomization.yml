@@ -20,4 +20,4 @@ resources:
 images:
 - name: fase2-auth-service
   newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/dragonball/auth-service-default
-  newTag: 86160595b1031c43be81b93c3e044e8eefe540d1
+  newTag: c1d4803c492e4b0ce6ee6ad2413c1cdf195404dc
