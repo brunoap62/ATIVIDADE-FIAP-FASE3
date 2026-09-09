@@ -27,8 +27,8 @@ module "eks" {
   vpc_id              = module.network.vpc_id
   subnet_ids          = module.network.private_subnet_ids
   node_instance_types = ["t3.medium"]
-  desired_size        = 1
-  min_size            = 1
+  desired_size        = 2
+  min_size            = 2
   max_size            = 4
 }
 

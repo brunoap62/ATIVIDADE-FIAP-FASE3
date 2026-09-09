@@ -11,10 +11,13 @@ permissions:
   contents: write
 
 env:
-  AWS_REGION: us-east-2
-  ECR_REPOSITORY: dragonball/auth-service-default
+  PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
+  CLUSTER_NAME: ${{ vars.PROJECT_NAME }}-eks-cluster
+  ECR_REPOSITORY: ${{ vars.PROJECT_NAME }}/auth-service-default
   SERVICE_DIR: auth-service
-  ARGOCD_APP_NAME: togglemaster-prod
+  ARGOCD_APP_FILE: gitops/argocd-app-prod.yml
+  GIT_REPO_URL: git@github.com:${{ github.repository }}.git
 
 jobs:
   # ============================================
@@ -174,12 +177,110 @@ jobs:
           echo "**Note:** ArgoCD will auto-sync changes to EKS" >> $GITHUB_STEP_SUMMARY
 
   # ============================================
-  # JOB 4: Pipeline Summary
+  # JOB 4: Garantir Aplicação no ArgoCD
+  # ============================================
+  ensure-argocd-app:
+    name: 🚀 Ensure ArgoCD Application
+    runs-on: ubuntu-latest
+    needs: [update-gitops, validate-manifests]
+    outputs:
+      app-name: ${{ steps.verify-app.outputs.app_name }}
+      app-status: ${{ steps.verify-app.outputs.app_status }}
+      app-action: ${{ steps.verify-app.outputs.app_action }}
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🔑 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔄 Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
+
+      - name: 🔑 Ensure ArgoCD Git SSH Secret exists
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.ARGOCD_SSH_PRIVATE_KEY }}
+        run: |
+          echo "🔍 Verificando credenciais SSH do Git no ArgoCD..."
+          if ! kubectl get secret repo-github-fase3 -n argocd &> /dev/null; then
+            if [ -n "$SSH_PRIVATE_KEY" ]; then
+              echo "🔐 Criando Secret do repositório Git com chave SSH no ArgoCD..."
+              cat <<EOF | kubectl apply -f -
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: repo-github-fase3
+            namespace: argocd
+            labels:
+              argocd.argoproj.io/secret-type: repository
+          type: Opaque
+          stringData:
+            type: git
+            url: ${{ env.GIT_REPO_URL }}
+            sshPrivateKey: |
+          $(echo "$SSH_PRIVATE_KEY" | sed 's/^/    /')
+          EOF
+              echo "✅ Secret 'repo-github-fase3' criado com sucesso no namespace argocd!"
+            else
+              echo "⚠️ Secret ARGOCD_SSH_PRIVATE_KEY não configurado nos Secrets do GitHub Actions."
+            fi
+          else
+            echo "✅ Secret 'repo-github-fase3' já existe no ArgoCD."
+          fi
+
+      - name: 🚀 Verify & Apply ArgoCD Application
+        id: verify-app
+        run: |
+          # Extrai o nome da Application diretamente do manifesto YAML
+          APP_NAME=$(grep -E '^\s*name:' ${{ env.ARGOCD_APP_FILE }} | head -n 1 | awk '{print $2}')
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          
+          echo "🔍 Verificando se a aplicação '$APP_NAME' existe no ArgoCD..."
+          
+          if ! kubectl get application "$APP_NAME" -n argocd &> /dev/null; then
+            echo "⚠️ Application '$APP_NAME' não encontrada. Criando agora..."
+            kubectl apply -f ${{ env.ARGOCD_APP_FILE }}
+            echo "app_action=created" >> $GITHUB_OUTPUT
+            echo "app_status=✨ Criada com sucesso" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Application '$APP_NAME' já existe no cluster. Aplicando manifesto..."
+            APPLY_OUT=$(kubectl apply -f ${{ env.ARGOCD_APP_FILE }})
+            echo "$APPLY_OUT"
+            if [[ "$APPLY_OUT" =~ "configured" ]]; then
+              echo "app_action=updated" >> $GITHUB_OUTPUT
+              echo "app_status=🔄 Atualizada (Configured)" >> $GITHUB_OUTPUT
+            else
+              echo "app_action=unchanged" >> $GITHUB_OUTPUT
+              echo "app_status=✅ Já existia (Unchanged)" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: 📊 ArgoCD App Summary
+        if: always()
+        run: |
+          echo "## 🚀 ArgoCD Application Step" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Propriedade | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Aplicação** | \`${{ steps.verify-app.outputs.app_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Cluster** | \`${{ env.CLUSTER_NAME }}\` (\`${{ env.AWS_REGION }}\`) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Manifesto** | \`${{ env.ARGOCD_APP_FILE }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Resultado** | ${{ steps.verify-app.outputs.app_status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # JOB 5: Pipeline Summary
   # ============================================
   pipeline-summary:
     name: 📊 Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [build-and-push, update-gitops, validate-manifests]
+    needs: [build-and-push, update-gitops, validate-manifests, ensure-argocd-app]
     if: always()
 
     steps:
@@ -187,6 +288,8 @@ jobs:
         env:
           IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
           ECR_REGISTRY: ${{ needs.build-and-push.outputs.ecr-registry }}
+          APP_STATUS: ${{ needs.ensure-argocd-app.outputs.app-status }}
+          APP_NAME: ${{ needs.ensure-argocd-app.outputs.app-name }}
         run: |
           echo "## 🚀 GitOps Pipeline Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -194,8 +297,9 @@ jobs:
           echo "1. 🐳 **Build & Push:** ✅ Image built and pushed to ECR" >> $GITHUB_STEP_SUMMARY
           echo "2. 📝 **Update GitOps:** ✅ Manifests updated in Git" >> $GITHUB_STEP_SUMMARY
           echo "3. ✅ **Validate:** ✅ Manifests validated" >> $GITHUB_STEP_SUMMARY
+          echo "4. 🚀 **ArgoCD App:** $APP_STATUS" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Deployment Details:" >> $GITHUB_STEP_SUMMARY
           echo "- **Image:** \`$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **ArgoCD App:** \`${{ env.ARGOCD_APP_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **ArgoCD App:** \`$APP_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** 🎉 **READY - ArgoCD is syncing to EKS automatically**" >> $GITHUB_STEP_SUMMARY
