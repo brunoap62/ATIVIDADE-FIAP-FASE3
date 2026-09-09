@@ -4,10 +4,10 @@ kind: Kustomization
 namespace: toggle-master
 
 resources:
-  - configmap.yml
-  - deployment.yml
-  - secret.yml
-  - service.yml
+- configmap.yml
+- deployment.yml
+- secret.yml
+- service.yml
 
 # ============================================
 # IMAGENS
@@ -17,7 +17,6 @@ resources:
 # O "name" deve corresponder ao placeholder no deployment.yaml
 # O "newName" é a imagem real no ECR
 images:
-  - name: fase2-auth-service # Nome exato que está no base/deployment.yml
-    newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/dragonball/auth-service-default # URI real do ECR
-    newTag: latest # Tag da imagem
-
+- name: fase2-auth-service
+  newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/dragonball/auth-service-default
+  newTag: 700c7f09974a28da2b5957d018d212e1d5b133f5
