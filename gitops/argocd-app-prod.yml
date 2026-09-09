@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: togglemaster-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:brunoap62/ATIVIDADE-FIAP-FASE3.git
+    targetRevision: main
+    path: gitops/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: toggle-master
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
