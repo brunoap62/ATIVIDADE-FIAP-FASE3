@@ -11,8 +11,8 @@ on:
 
 env:
   AWS_REGION: us-east-2
-  CLUSTER_NAME: jojo-eks-cluster
-  ECR_IMAGE: 052717076243.dkr.ecr.us-east-2.amazonaws.com/jojo/auth-service-default
+  CLUSTER_NAME: dragonball-eks-cluster
+  ECR_IMAGE: 052717076243.dkr.ecr.us-east-2.amazonaws.com/dragonball/auth-service-default
 
 jobs:
   deploy:

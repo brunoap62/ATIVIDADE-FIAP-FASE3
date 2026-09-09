@@ -6,7 +6,7 @@ module "network" {
   source = "./modules/network-vpc"
 
   project_name         = var.project_name
-  cluster_name         = var.cluster_name
+  cluster_name         = "${var.project_name}-eks-cluster"
   vpc_cidr             = "10.0.0.0/16"
   availability_zones   = ["${var.aws_region}a", "${var.aws_region}b"]
   public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
@@ -22,7 +22,7 @@ module "eks" {
   source = "./modules/eks"
 
   project_name        = var.project_name
-  cluster_name        = var.cluster_name
+  cluster_name        = "${var.project_name}-eks-cluster"
   cluster_version     = "1.31"
   vpc_id              = module.network.vpc_id
   subnet_ids          = module.network.private_subnet_ids
@@ -73,7 +73,7 @@ module "rds" {
 # module "dynamodb" {
 #   source = "./modules/dynamodb"
 # 
-#   table_name   = "ToggleMasterAnalytics"
+#   table_name   = "${var.project_name}-analytics"
 #   billing_mode = "PAY_PER_REQUEST"
 #   hash_key     = "event_id"
 # }
@@ -84,7 +84,7 @@ module "rds" {
 # Fila SQS para desacoplamento e comunicação assíncrona entre os microsserviços.
 # module "sqs" {
 #   source   = "./modules/sqs"
-#   sqs_name = "jojo-bizzarre-adventure-sqs"
+#   sqs_name = "${var.project_name}-sqs"
 # }
 
 # ==============================================================================
@@ -93,7 +93,7 @@ module "rds" {
 # Bucket S3 configurado por workspace para armazenamento estático e artefatos de IaC.
 # module "s3" {
 #   source         = "./modules/s3"
-#   s3_bucket_name = "jojo-bizzarre-adventure-iac"
+#   s3_bucket_name = "${var.project_name}-iac"
 #   s3_tags = {
 #     Iac = true
 #   }
@@ -106,13 +106,14 @@ module "rds" {
 module "ecr" {
   source = "./modules/ecr"
   repository_names = [
-    "jojo/auth-service-${terraform.workspace}",
-    "jojo/flag-service-${terraform.workspace}",
-    "jojo/targeting-service-${terraform.workspace}",
-    "jojo/evaluation-service-${terraform.workspace}",
-    "jojo/analytics-service-${terraform.workspace}"
+    "${var.project_name}/auth-service-${terraform.workspace}",
+    "${var.project_name}/flag-service-${terraform.workspace}",
+    "${var.project_name}/targeting-service-${terraform.workspace}",
+    "${var.project_name}/evaluation-service-${terraform.workspace}",
+    "${var.project_name}/analytics-service-${terraform.workspace}"
   ]
 }
+
 
 # ==============================================================================
 # 9. Módulo GitOps / CD (ArgoCD)

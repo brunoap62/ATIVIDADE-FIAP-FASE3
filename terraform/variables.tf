@@ -1,7 +1,7 @@
 variable "project_name" {
   description = "Nome do projeto"
   type        = string
-  default     = "jojo-adventure"
+  default     = "dragonball"
 }
 
 variable "cluster_name" {
