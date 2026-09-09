@@ -1,37 +1,35 @@
 variable "project_name" {
   description = "Nome do projeto"
   type        = string
-  default     = "super-app"
+  sensitive   = false
 }
 
 variable "cluster_name" {
   description = "Nome do cluster EKS"
   type        = string
-  default     = "jojo-eks-cluster"
+  sensitive   = true
 }
 
 variable "aws_region" {
   description = "Região AWS padrão"
   type        = string
-  default     = "us-east-2"
+  sensitive   = true
 }
 
 variable "db_username" {
   description = "Usuário master dos bancos PostgreSQL"
   type        = string
-  default     = "jojoadmin"
+  sensitive   = true
 }
 
 variable "db_password" {
   description = "Senha master dos bancos PostgreSQL"
   type        = string
   sensitive   = true
-  default     = "SenhaSuperSegura123!"
 }
 
 variable "master_key" {
   description = "Chave mestre de administracao para o auth-service"
   type        = string
   sensitive   = true
-  default     = "admin-secreto-123"
 }

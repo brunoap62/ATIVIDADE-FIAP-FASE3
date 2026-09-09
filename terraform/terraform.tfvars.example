@@ -1,0 +1,13 @@
+# Copie este arquivo para 'terraform.tfvars' e preencha com suas credenciais.
+# O arquivo 'terraform.tfvars' já é ignorado pelo Git (.gitignore).
+
+project_name = "super-app"
+cluster_name = "jojo-eks-cluster"
+aws_region   = "us-east-2"
+
+# Credenciais Master do Banco PostgreSQL
+db_username = "jojoadmin"
+db_password = "SubstituaPorUmaSenhaSegura123!"
+
+# Chave Mestre de Administração (auth-service)
+master_key = "SubstituaPorUmaChaveSecreta123"
