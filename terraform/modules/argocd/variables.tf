@@ -13,5 +13,5 @@ variable "namespace" {
 variable "server_service_type" {
   description = "Tipo do Service do ArgoCD Server (ClusterIP, NodePort, LoadBalancer)"
   type        = string
-  default     = "LoadBalancer"
+  default     = "ClusterIP"
 }

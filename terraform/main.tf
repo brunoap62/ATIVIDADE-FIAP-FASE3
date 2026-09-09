@@ -123,7 +123,7 @@ module "argocd" {
   source = "./modules/argocd"
 
   namespace           = "argocd"
-  server_service_type = "LoadBalancer"
+  server_service_type = "ClusterIP"
 
   depends_on = [module.eks]
 }

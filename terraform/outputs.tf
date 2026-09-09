@@ -144,19 +144,24 @@ output "argocd_chart_version" {
   value       = module.argocd.chart_version
 }
 
-output "argocd_server_url" {
-  description = "URL pública de acesso ao ArgoCD Web UI gerada pelo Load Balancer da AWS"
-  value       = module.argocd.server_load_balancer_hostname != "" ? "https://${module.argocd.server_load_balancer_hostname}" : "Aguardando atribuição do Load Balancer pelo EKS..."
-}
-
 output "argocd_admin_username" {
   description = "Usuário padrão de administração do ArgoCD"
   value       = "admin"
 }
 
-output "argocd_admin_password" {
-  description = "Senha inicial do usuário admin do ArgoCD gerada automaticamente"
-  value       = module.argocd.admin_password
+output "argocd_admin_password_command" {
+  description = "Comando para obter a senha inicial do admin do ArgoCD via kubectl"
+  value       = "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo"
+}
+
+output "argocd_port_forward_command" {
+  description = "Comando para acessar o painel do ArgoCD localmente em https://localhost:8080"
+  value       = "kubectl port-forward svc/argocd-server -n argocd 8080:443"
+}
+
+output "argocd_local_url" {
+  description = "URL local do ArgoCD via port-forward"
+  value       = "https://localhost:8080"
 }
 
 # ------------------------------------------------------------------------------
@@ -172,9 +177,9 @@ output "ingress_nginx_chart_version" {
   value       = module.ingress_nginx.chart_version
 }
 
-output "ingress_load_balancer_url" {
-  description = "URL pública de entrada do Ingress NGINX gerada pelo Network Load Balancer da AWS"
-  value       = module.ingress_nginx.load_balancer_hostname != "" ? "http://${module.ingress_nginx.load_balancer_hostname}" : "Aguardando atribuição do Load Balancer pelo EKS..."
+output "ingress_url_command" {
+  description = "Comando para obter a URL pública da API/Ingress gerada pelo Load Balancer da AWS"
+  value       = "kubectl -n toggle-master get ingress toggle-ingress -o jsonpath='http://{.status.loadBalancer.ingress[0].hostname}/auth/health'; echo"
 }
 
 # ------------------------------------------------------------------------------

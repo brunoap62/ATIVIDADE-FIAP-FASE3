@@ -28,12 +28,3 @@ resource "helm_release" "ingress_nginx" {
     value = "true"
   }
 }
-
-data "kubernetes_service" "ingress_nginx_controller" {
-  metadata {
-    name      = "ingress-nginx-controller"
-    namespace = helm_release.ingress_nginx.namespace
-  }
-
-  depends_on = [helm_release.ingress_nginx]
-}

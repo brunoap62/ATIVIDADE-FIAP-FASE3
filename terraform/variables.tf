@@ -1,7 +1,7 @@
 variable "project_name" {
   description = "Nome do projeto"
   type        = string
-  default     = "dragonball"
+  default     = "super-app"
 }
 
 variable "cluster_name" {
