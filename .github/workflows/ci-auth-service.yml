@@ -1,4 +1,4 @@
-name: 🚀 ToggleMaster - GitOps Pipeline - Build, Update & Sync (Auth Service)
+name: 🚀 Auth Service - GitOps Pipeline - Build, Update & Sync
 
 on:
   push:
@@ -16,11 +16,8 @@ env:
   CLUSTER_NAME: ${{ secrets.PROJECT_NAME }}-eks-cluster
   ECR_REPOSITORY: ${{ secrets.PROJECT_NAME }}/auth-service-default
 
-
-
   SERVICE_DIR: auth-service
   ARGOCD_APP_FILE: gitops/argocd-app-prod.yml
-
 
 jobs:
   # ============================================
@@ -227,9 +224,9 @@ jobs:
           # Extrai o nome da Application diretamente do manifesto YAML
           APP_NAME=$(grep -E '^\s*name:' ${{ env.ARGOCD_APP_FILE }} | head -n 1 | awk '{print $2}')
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
-          
+
           echo "🔍 Verificando se a aplicação '$APP_NAME' existe no ArgoCD..."
-          
+
           if ! kubectl get application "$APP_NAME" -n argocd &> /dev/null; then
             echo "⚠️ Application '$APP_NAME' não encontrada. Criando agora..."
             kubectl apply -f ${{ env.ARGOCD_APP_FILE }}
@@ -267,7 +264,8 @@ jobs:
   pipeline-summary:
     name: 📊 Pipeline Summary
     runs-on: ubuntu-latest
-    needs: [build-and-push, update-gitops, validate-manifests, ensure-argocd-app]
+    needs:
+      [build-and-push, update-gitops, validate-manifests, ensure-argocd-app]
     if: always()
 
     steps:
