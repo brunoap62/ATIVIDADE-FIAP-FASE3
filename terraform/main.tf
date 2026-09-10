@@ -33,24 +33,23 @@ module "eks" {
 }
 
 # ==============================================================================
-# 3. Módulo de Banco de Dados Relacional (AWS RDS PostgreSQL)
+# 3. Módulos de Banco de Dados Relacional (AWS RDS PostgreSQL Dedicados)
 # ==============================================================================
-# Banco de dados relacional com acesso liberado exclusivamente para os nós do EKS.
-# As dependências dos módulos 'network' e 'eks' são resolvidas automaticamente.
-module "rds" {
+# Banco de dados relacional dedicado para o auth-service (auth_db / auth-db)
+module "auth_rds" {
   source = "./modules/rds"
 
-  project_name          = var.project_name
+  project_name          = "${var.project_name}-auth"
   vpc_id                = module.network.vpc_id
   subnet_ids            = module.network.private_subnet_ids
   eks_security_group_id = module.eks.cluster_security_group_id
   db_instance_class     = "db.t3.micro"
   db_name               = "auth_db"
-  db_username           = var.db_username
-  db_password           = var.db_password
+  db_username           = var.auth_db_username
+  db_password           = var.auth_db_password
 }
 
-# Módulo de Banco de Dados Relacional Dedicado (AWS RDS PostgreSQL - Flag Service)
+# Banco de dados relacional dedicado para o flag-service (flag_db / flag-db)
 module "flag_rds" {
   source = "./modules/rds"
 
@@ -165,7 +164,7 @@ resource "aws_ssm_parameter" "auth_service_database_url" {
   name        = "/auth-service/database_url"
   description = "Connection string do RDS PostgreSQL para o auth-service com SSL habilitado"
   type        = "SecureString"
-  value       = "postgres://${module.rds.db_username}:${var.db_password}@${module.rds.db_endpoint}/${module.rds.db_name}?sslmode=require"
+  value       = "postgres://${module.auth_rds.db_username}:${var.auth_db_password}@${module.auth_rds.db_endpoint}/${module.auth_rds.db_name}?sslmode=require"
 
   tags = {
     Environment = "prod"
@@ -173,7 +172,7 @@ resource "aws_ssm_parameter" "auth_service_database_url" {
     ManagedBy   = "Terraform"
   }
 
-  depends_on = [module.rds]
+  depends_on = [module.auth_rds]
 }
 
 resource "aws_ssm_parameter" "auth_service_master_key" {

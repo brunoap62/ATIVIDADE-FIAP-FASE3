@@ -5,9 +5,13 @@ project_name = "super-app"
 cluster_name = "jojo-eks-cluster"
 aws_region   = "us-east-2"
 
-# Credenciais Master do Banco PostgreSQL
-db_username = "jojoadmin"
-db_password = "SubstituaPorUmaSenhaSegura123!"
+# Credenciais Master do Banco PostgreSQL (auth-service - auth_db)
+auth_db_username = "auth_admin"
+auth_db_password = "SubstituaPorUmaSenhaSegura123!"
+
+# Credenciais Master do Banco PostgreSQL (flag-service - flag_db)
+flag_db_username = "flag_admin"
+flag_db_password = "SubstituaPorUmaSenhaSegura456!"
 
 # Chave Mestre de Administração (auth-service)
 master_key = "SubstituaPorUmaChaveSecreta123"

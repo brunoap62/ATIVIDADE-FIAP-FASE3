@@ -72,29 +72,30 @@ output "eks_oidc_provider_arn" {
 # }
 
 # ------------------------------------------------------------------------------
-# 4. Banco de Dados Relacional (RDS PostgreSQL - 100% Free Tier)
+# 4. Bancos de Dados Relacionais Dedicados (RDS PostgreSQL - 100% Free Tier)
 # ------------------------------------------------------------------------------
-output "rds_endpoint" {
-  description = "Endpoint completo de conexão do banco RDS PostgreSQL"
-  value       = module.rds.db_endpoint
+# --- Banco RDS PostgreSQL Dedicado (auth-service / auth_db) ---
+output "auth_rds_endpoint" {
+  description = "Endpoint completo de conexão do banco RDS PostgreSQL do auth-service"
+  value       = module.auth_rds.db_endpoint
 }
 
-output "rds_address" {
-  description = "Host do banco RDS PostgreSQL"
-  value       = module.rds.db_address
+output "auth_rds_address" {
+  description = "Host do banco RDS PostgreSQL do auth-service"
+  value       = module.auth_rds.db_address
 }
 
-output "rds_port" {
-  description = "Porta do banco RDS PostgreSQL"
-  value       = module.rds.db_port
+output "auth_rds_port" {
+  description = "Porta do banco RDS PostgreSQL do auth-service"
+  value       = module.auth_rds.db_port
 }
 
-output "rds_database_name" {
-  description = "Nome do banco de dados inicial no RDS"
-  value       = module.rds.db_name
+output "auth_rds_database_name" {
+  description = "Nome do banco de dados inicial no RDS do auth-service"
+  value       = module.auth_rds.db_name
 }
 
-# --- Banco RDS PostgreSQL Dedicado (flag-service) ---
+# --- Banco RDS PostgreSQL Dedicado (flag-service / flag_db) ---
 output "flag_rds_endpoint" {
   description = "Endpoint completo de conexão do banco RDS PostgreSQL do flag-service"
   value       = module.flag_rds.db_endpoint
