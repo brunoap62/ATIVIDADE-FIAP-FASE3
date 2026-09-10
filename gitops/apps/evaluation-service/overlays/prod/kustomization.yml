@@ -4,13 +4,3 @@ kind: Kustomization
 # Aponta para o base comum
 resources:
   - ../../base
-
-# Exemplo de customização exclusiva de prod
-patches:
-  - target:
-      kind: Deployment
-      name: evaluation-service
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 1

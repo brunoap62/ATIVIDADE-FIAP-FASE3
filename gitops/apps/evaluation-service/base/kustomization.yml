@@ -9,6 +9,7 @@ resources:
 - externalsecret.yml
 - service.yml
 - serviceaccount.yml
+- hpa.yml
 
 # ============================================
 # IMAGENS
