@@ -19,4 +19,4 @@ resources:
 images:
 - name: fase2-evaluation-service
   newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/evaluation-service-default
-  newTag: 9b459a3d2417e8435d293e014b28706e794e2074
+  newTag: 990bd1b3c9be7f1daa4c2799b7abcc5db9254214
