@@ -13,5 +13,9 @@ auth_db_password = "SubstituaPorUmaSenhaSegura123!"
 flag_db_username = "flag_admin"
 flag_db_password = "SubstituaPorUmaSenhaSegura456!"
 
+# Credenciais Master do Banco PostgreSQL (targeting-service - targeting_db)
+targeting_db_username = "targeting_admin"
+targeting_db_password = "SubstituaPorUmaSenhaSegura789!"
+
 # Chave Mestre de Administração (auth-service)
 master_key = "SubstituaPorUmaChaveSecreta123"

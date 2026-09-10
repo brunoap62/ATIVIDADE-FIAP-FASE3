@@ -63,6 +63,20 @@ module "flag_rds" {
   db_password           = var.flag_db_password
 }
 
+# Banco de dados relacional dedicado para o targeting-service (targeting_db / targeting-db)
+module "targeting_rds" {
+  source = "./modules/rds"
+
+  project_name          = "${var.project_name}-targeting"
+  vpc_id                = module.network.vpc_id
+  subnet_ids            = module.network.private_subnet_ids
+  eks_security_group_id = module.eks.cluster_security_group_id
+  db_instance_class     = "db.t3.micro"
+  db_name               = "targeting_db"
+  db_username           = var.targeting_db_username
+  db_password           = var.targeting_db_password
+}
+
 
 # ==============================================================================
 # 4. Módulo de Cache em Memória (AWS ElastiCache Redis) [COMENTADO]
@@ -201,6 +215,21 @@ resource "aws_ssm_parameter" "flag_service_database_url" {
   }
 
   depends_on = [module.flag_rds]
+}
+
+resource "aws_ssm_parameter" "targeting_service_database_url" {
+  name        = "/targeting-service/database_url"
+  description = "Connection string do RDS PostgreSQL para o targeting-service com SSL habilitado"
+  type        = "SecureString"
+  value       = "postgres://${var.targeting_db_username}:${var.targeting_db_password}@${module.targeting_rds.db_endpoint}/${module.targeting_rds.db_name}?sslmode=require"
+
+  tags = {
+    Environment = "prod"
+    Service     = "targeting-service"
+    ManagedBy   = "Terraform"
+  }
+
+  depends_on = [module.targeting_rds]
 }
 
 # ==============================================================================

@@ -45,3 +45,15 @@ variable "flag_db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "targeting_db_username" {
+  description = "Usuário master do banco RDS PostgreSQL do targeting-service"
+  type        = string
+  sensitive   = true
+}
+
+variable "targeting_db_password" {
+  description = "Senha master do banco RDS PostgreSQL do targeting-service"
+  type        = string
+  sensitive   = true
+}

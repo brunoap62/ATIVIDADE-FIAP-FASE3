@@ -116,6 +116,27 @@ output "flag_rds_database_name" {
   value       = module.flag_rds.db_name
 }
 
+# --- Banco RDS PostgreSQL Dedicado (targeting-service / targeting_db) ---
+output "targeting_rds_endpoint" {
+  description = "Endpoint completo de conexão do banco RDS PostgreSQL do targeting-service"
+  value       = module.targeting_rds.db_endpoint
+}
+
+output "targeting_rds_address" {
+  description = "Host do banco RDS PostgreSQL do targeting-service"
+  value       = module.targeting_rds.db_address
+}
+
+output "targeting_rds_port" {
+  description = "Porta do banco RDS PostgreSQL do targeting-service"
+  value       = module.targeting_rds.db_port
+}
+
+output "targeting_rds_database_name" {
+  description = "Nome do banco de dados inicial no RDS do targeting-service"
+  value       = module.targeting_rds.db_name
+}
+
 
 # ------------------------------------------------------------------------------
 # 5. Banco de Dados NoSQL (DynamoDB) [COMENTADO]
@@ -225,4 +246,9 @@ output "ssm_master_key_param" {
 output "ssm_flag_database_url_param" {
   description = "Nome do parametro SSM da database_url do flag-service"
   value       = aws_ssm_parameter.flag_service_database_url.name
+}
+
+output "ssm_targeting_database_url_param" {
+  description = "Nome do parametro SSM da database_url do targeting-service"
+  value       = aws_ssm_parameter.targeting_service_database_url.name
 }
