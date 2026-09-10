@@ -101,7 +101,7 @@ module "redis" {
 module "dynamodb" {
   source = "./modules/dynamodb"
 
-  table_name   = "${var.project_name}-analytics"
+  table_name   = "ToggleMasterAnalytics"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "event_id"
 }
