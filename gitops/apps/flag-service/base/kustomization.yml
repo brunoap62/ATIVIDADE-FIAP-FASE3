@@ -19,4 +19,4 @@ resources:
 images:
 - name: fase2-flag-service
   newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/flag-service-default
-  newTag: a3c912446c39bc1065b2a350dc91a1881ef2ba11
+  newTag: b3a840b15dbda7ee03417f95aee880bb76c03516
