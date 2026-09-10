@@ -137,7 +137,9 @@ jobs:
             echo "⚠️ No changes to commit"
           else
             git commit -m "chore(gitops): update flag-service image to $IMAGE_TAG [skip ci]"
-            git push origin main
+            for i in {1..3}; do
+              git pull --rebase origin main && git push origin main && break || sleep 2
+            done
             echo "✅ Changes pushed to repository"
           fi
 
