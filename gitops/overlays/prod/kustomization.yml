@@ -9,6 +9,6 @@ resources:
   - ../../apps/auth-service/overlays/prod
   - ../../apps/flag-service/overlays/prod
   - ../../apps/targeting-service/overlays/prod
+  - ../../apps/evaluation-service/overlays/prod
   # Adicione os próximos microsserviços aqui conforme forem criados:
-  # - ../../apps/evaluation-service/overlays/prod
   # - ../../apps/analytics-service/overlays/prod

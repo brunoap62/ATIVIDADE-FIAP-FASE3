@@ -137,9 +137,34 @@ output "targeting_rds_database_name" {
   value       = module.targeting_rds.db_name
 }
 
+# ------------------------------------------------------------------------------
+# 4. Cache em Memória (AWS ElastiCache Redis)
+# ------------------------------------------------------------------------------
+output "redis_endpoint" {
+  description = "Endpoint do cluster ElastiCache Redis"
+  value       = module.redis.redis_endpoint
+}
+
+output "redis_port" {
+  description = "Porta do cluster ElastiCache Redis"
+  value       = module.redis.redis_port
+}
 
 # ------------------------------------------------------------------------------
-# 5. Banco de Dados NoSQL (DynamoDB) [COMENTADO]
+# 5. Mensageria Assíncrona (AWS SQS)
+# ------------------------------------------------------------------------------
+output "sqs_queue_url" {
+  description = "URL da fila SQS para o evaluation-service"
+  value       = module.sqs.queue_id
+}
+
+output "sqs_queue_arn" {
+  description = "ARN da fila SQS para o evaluation-service"
+  value       = module.sqs.queue_arn
+}
+
+# ------------------------------------------------------------------------------
+# 6. Banco de Dados NoSQL (DynamoDB) [COMENTADO]
 # ------------------------------------------------------------------------------
 # output "dynamodb_table_name" {
 #   description = "Nome da tabela DynamoDB para analytics"
@@ -152,7 +177,7 @@ output "targeting_rds_database_name" {
 # }
 
 # ------------------------------------------------------------------------------
-# 6. Storage & Registro de Containers (S3 [COMENTADO] & ECR)
+# 7. Storage & Registro de Containers (S3 [COMENTADO] & ECR)
 # ------------------------------------------------------------------------------
 # output "s3_bucket_name" {
 #   description = "Nome do bucket S3"
@@ -251,4 +276,19 @@ output "ssm_flag_database_url_param" {
 output "ssm_targeting_database_url_param" {
   description = "Nome do parametro SSM da database_url do targeting-service"
   value       = aws_ssm_parameter.targeting_service_database_url.name
+}
+
+output "ssm_evaluation_redis_url_param" {
+  description = "Nome do parametro SSM da redis_url do evaluation-service"
+  value       = aws_ssm_parameter.evaluation_service_redis_url.name
+}
+
+output "ssm_evaluation_sqs_url_param" {
+  description = "Nome do parametro SSM da sqs_url do evaluation-service"
+  value       = aws_ssm_parameter.evaluation_service_sqs_url.name
+}
+
+output "ssm_evaluation_api_key_param" {
+  description = "Nome do parametro SSM da service_api_key do evaluation-service"
+  value       = aws_ssm_parameter.evaluation_service_api_key.name
 }

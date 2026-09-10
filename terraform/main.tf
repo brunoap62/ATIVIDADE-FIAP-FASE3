@@ -79,20 +79,20 @@ module "targeting_rds" {
 
 
 # ==============================================================================
-# 4. Módulo de Cache em Memória (AWS ElastiCache Redis) [COMENTADO]
+# 4. Módulo de Cache em Memória (AWS ElastiCache Redis)
 # ==============================================================================
 # Cache em memória e controle de sessão/flags com acesso seguro via SG do EKS.
 # As dependências dos módulos 'network' e 'eks' são resolvidas automaticamente.
-# module "redis" {
-#   source = "./modules/redis"
-# 
-#   project_name          = var.project_name
-#   vpc_id                = module.network.vpc_id
-#   subnet_ids            = module.network.private_subnet_ids
-#   eks_security_group_id = module.eks.cluster_security_group_id
-#   node_type             = "cache.t3.micro"
-#   engine_version        = "7.0"
-# }
+module "redis" {
+  source = "./modules/redis"
+
+  project_name          = var.project_name
+  vpc_id                = module.network.vpc_id
+  subnet_ids            = module.network.private_subnet_ids
+  eks_security_group_id = module.eks.cluster_security_group_id
+  node_type             = "cache.t3.micro"
+  engine_version        = "7.0"
+}
 
 # ==============================================================================
 # 5. Módulo de Banco de Dados NoSQL (AWS DynamoDB) [COMENTADO]
@@ -107,13 +107,34 @@ module "targeting_rds" {
 # }
 
 # ==============================================================================
-# 6. Módulo de Mensageria Assíncrona (AWS SQS) [COMENTADO]
+# 6. Módulo de Mensageria Assíncrona (AWS SQS)
 # ==============================================================================
 # Fila SQS para desacoplamento e comunicação assíncrona entre os microsserviços.
-# module "sqs" {
-#   source   = "./modules/sqs"
-#   sqs_name = "${var.project_name}-sqs"
-# }
+module "sqs" {
+  source   = "./modules/sqs"
+  sqs_name = "${var.project_name}-evaluation-queue"
+}
+
+# Permissão IAM para os nós do EKS enviarem mensagens para a fila SQS
+resource "aws_iam_role_policy" "eks_node_sqs" {
+  name = "${var.project_name}-node-sqs-policy"
+  role = module.eks.node_role_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueUrl",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = module.sqs.queue_arn
+      }
+    ]
+  })
+}
 
 # ==============================================================================
 # 7. Módulo de Armazenamento de Objetos (AWS S3) [COMENTADO]
@@ -230,6 +251,49 @@ resource "aws_ssm_parameter" "targeting_service_database_url" {
   }
 
   depends_on = [module.targeting_rds]
+}
+
+resource "aws_ssm_parameter" "evaluation_service_redis_url" {
+  name        = "/evaluation-service/redis_url"
+  description = "Connection string do Redis ElastiCache para o evaluation-service"
+  type        = "SecureString"
+  value       = "redis://${module.redis.redis_endpoint}:${module.redis.redis_port}"
+
+  tags = {
+    Environment = "prod"
+    Service     = "evaluation-service"
+    ManagedBy   = "Terraform"
+  }
+
+  depends_on = [module.redis]
+}
+
+resource "aws_ssm_parameter" "evaluation_service_sqs_url" {
+  name        = "/evaluation-service/sqs_url"
+  description = "URL da fila SQS para o evaluation-service"
+  type        = "SecureString"
+  value       = module.sqs.queue_id
+
+  tags = {
+    Environment = "prod"
+    Service     = "evaluation-service"
+    ManagedBy   = "Terraform"
+  }
+
+  depends_on = [module.sqs]
+}
+
+resource "aws_ssm_parameter" "evaluation_service_api_key" {
+  name        = "/evaluation-service/service_api_key"
+  description = "Chave de API para comunicacao interna do evaluation-service com flag e targeting services"
+  type        = "SecureString"
+  value       = var.master_key
+
+  tags = {
+    Environment = "prod"
+    Service     = "evaluation-service"
+    ManagedBy   = "Terraform"
+  }
 }
 
 # ==============================================================================

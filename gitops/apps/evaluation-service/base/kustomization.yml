@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: toggle-master
+
+resources:
+- configmap.yml
+- deployment.yml
+- externalsecret.yml
+- service.yml
+
+# ============================================
+# IMAGENS
+# ============================================
+# Configuração de imagens Docker
+# Permite substituir tags sem modificar os YAMLs
+# O "name" deve corresponder ao placeholder no deployment.yaml
+# O "newName" e "newTag" são atualizados dinamicamente pelo CI/CD
+images:
+- name: fase2-evaluation-service
+  newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/evaluation-service-default
+  newTag: latest

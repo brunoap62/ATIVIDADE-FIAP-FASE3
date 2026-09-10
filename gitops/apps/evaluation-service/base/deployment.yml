@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: evaluation-service
+  namespace: toggle-master
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evaluation-service
+  template:
+    metadata:
+      labels:
+        app: evaluation-service
+    spec:
+      containers:
+        - name: evaluation-service
+          image: fase2-evaluation-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8004
+          envFrom:
+            - configMapRef:
+                name: evaluation-service-config
+            - secretRef:
+                name: evaluation-service-secret
+          startupProbe: # Testa se a aplicação está pronta para receber requisições
+            httpGet:
+              path: /health
+              port: 8004
+            failureThreshold: 5
+            successThreshold: 1
+            timeoutSeconds: 2
+            periodSeconds: 10
+            initialDelaySeconds: 10
+          readinessProbe: # Verifica saúde da aplicação e conexões com Redis
+            httpGet:
+              path: /health
+              port: 8004
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 2
+            periodSeconds: 15
+            initialDelaySeconds: 5
+          livenessProbe: # Verifica se a aplicação está viva
+            httpGet:
+              path: /health
+              port: 8004
+            failureThreshold: 5
+            successThreshold: 1
+            periodSeconds: 10
+            timeoutSeconds: 2
+            initialDelaySeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: evaluation-service
+  namespace: toggle-master
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: evaluation-service
+  template:
+    metadata:
+      labels:
+        app: evaluation-service
+    spec:
+      containers:
+        - name: evaluation-service
+          image: 052717076243.dkr.ecr.us-east-2.amazonaws.com/togglemaster/evaluation-service
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8004
+          envFrom:
+            - configMapRef:
+                name: evaluation-service-config
+            - secretRef:
+                name: evaluation-service-secret
+            - secretRef:
+                name: global-aws-secret
+          startupProbe: # Testa se a aplicação está pronta para receber requisições
+            httpGet:
+              path: /health
+              port: 8004
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 10
+            initialDelaySeconds: 10
+          readinessProbe: # Verificar saude de recursos com REDIZ / PG
+            httpGet:
+              path: /health
+              port: 8004
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 15
+            initialDelaySeconds: 5
+          livenessProbe: # Verifica se a aplicação está viva
+            httpGet:
+              path: /health
+              port: 8004
+            failureThreshold: 5
+            successThreshold: 1
+            periodSeconds: 10
+            timeoutSeconds: 1
+            initialDelaySeconds: 5
+          resources:
+            requests:
+              cpu: "30m"
+              memory: "48Mi"
+            limits:
+              cpu: "150m"
+              memory: "192Mi"
+      imagePullSecrets:
+        - name: ecr-registry-key

@@ -28,3 +28,8 @@ output "oidc_provider_url" {
   value       = aws_iam_openid_connect_provider.eks.url
 }
 
+output "node_role_name" {
+  description = "Nome da IAM Role dos nós EKS"
+  value       = aws_iam_role.node.name
+}
+

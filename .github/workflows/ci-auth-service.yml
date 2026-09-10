@@ -1,4 +1,4 @@
-name: 🚀 GitOps Pipeline - Build, Update & Sync (Auth Service)
+name: 🚀 ToggleMaster - GitOps Pipeline - Build, Update & Sync (Auth Service)
 
 on:
   push:

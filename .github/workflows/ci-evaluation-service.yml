@@ -1,10 +1,10 @@
-name: 🚀 ToggleMaster - GitOps Pipeline - Build, Update & Sync (Targeting Service)
+name: 🚀 ToggleMaster - GitOps Pipeline - Build, Update & Sync (Evaluation Service)
 
 on:
   push:
     branches: [main]
     paths:
-      - "targeting-service/**"
+      - "evaluation-service/**"
   workflow_dispatch:
 
 permissions:
@@ -14,8 +14,8 @@ env:
   PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
   AWS_REGION: ${{ secrets.AWS_REGION }}
   CLUSTER_NAME: ${{ secrets.PROJECT_NAME }}-eks-cluster
-  ECR_REPOSITORY: ${{ secrets.PROJECT_NAME }}/targeting-service-default
-  SERVICE_DIR: targeting-service
+  ECR_REPOSITORY: ${{ secrets.PROJECT_NAME }}/evaluation-service-default
+  SERVICE_DIR: evaluation-service
   ARGOCD_APP_FILE: gitops/argocd-app-prod.yml
 
 jobs:
@@ -115,11 +115,11 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry || needs.build-and-push.outputs.ecr-registry }}
           IMAGE_TAG: ${{ needs.build-and-push.outputs.image-tag }}
         run: |
-          cd gitops/apps/targeting-service/base
+          cd gitops/apps/evaluation-service/base
 
           echo "🔄 Updating image tag to: $IMAGE_TAG (Registry: $ECR_REGISTRY)"
           kustomize edit set image \
-            fase2-targeting-service=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            fase2-evaluation-service=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
           echo "✅ Kustomization updated"
           cat kustomization.yml
@@ -131,12 +131,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add gitops/apps/targeting-service/base/kustomization.yml
+          git add gitops/apps/evaluation-service/base/kustomization.yml
 
           if git diff --staged --quiet; then
             echo "⚠️ No changes to commit"
           else
-            git commit -m "chore(gitops): update targeting-service image to $IMAGE_TAG [skip ci]"
+            git commit -m "chore(gitops): update evaluation-service image to $IMAGE_TAG [skip ci]"
             for i in {1..3}; do
               git pull --rebase origin main && git push origin main && break || sleep 2
             done
@@ -149,7 +149,7 @@ jobs:
         run: |
           echo "## 📝 GitOps Update Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Service:** \`targeting-service\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Service:** \`evaluation-service\`" >> $GITHUB_STEP_SUMMARY
           echo "**New Image Tag:** \`$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ✅ Manifests Updated and Committed to Git" >> $GITHUB_STEP_SUMMARY
 

@@ -1,4 +1,4 @@
-name: 🚀 GitOps Pipeline - Build, Update & Sync (Flag Service)
+name: 🚀 ToggleMaster - GitOps Pipeline - Build, Update & Sync (Flag Service)
 
 on:
   push:
