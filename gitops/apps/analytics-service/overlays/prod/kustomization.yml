@@ -3,12 +3,3 @@ kind: Kustomization
 
 resources:
   - ../../base
-
-patches:
-  - target:
-      kind: Deployment
-      name: analytics-service
-    patch: |-
-      - op: replace
-        path: /spec/replicas
-        value: 1
