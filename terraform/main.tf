@@ -95,16 +95,16 @@ module "redis" {
 }
 
 # ==============================================================================
-# 5. Módulo de Banco de Dados NoSQL (AWS DynamoDB) [COMENTADO]
+# 5. Módulo de Banco de Dados NoSQL (AWS DynamoDB)
 # ==============================================================================
 # Tabela NoSQL gerenciada e serverless (sob demanda) para analytics de eventos.
-# module "dynamodb" {
-#   source = "./modules/dynamodb"
-# 
-#   table_name   = "${var.project_name}-analytics"
-#   billing_mode = "PAY_PER_REQUEST"
-#   hash_key     = "event_id"
-# }
+module "dynamodb" {
+  source = "./modules/dynamodb"
+
+  table_name   = "${var.project_name}-analytics"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "event_id"
+}
 
 # ==============================================================================
 # 6. Módulo de Mensageria Assíncrona (AWS SQS)
@@ -175,6 +175,61 @@ resource "aws_iam_role_policy" "evaluation_sqs_policy" {
           "sqs:GetQueueAttributes"
         ]
         Resource = module.sqs.queue_arn
+      }
+    ]
+  })
+}
+
+# IAM Role (IRSA) para o analytics-service ler do SQS e gravar no DynamoDB
+resource "aws_iam_role" "analytics_sqs_dynamodb_irsa" {
+  name = "${var.project_name}-analytics-irsa-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = module.eks.oidc_provider_arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "${replace(module.eks.oidc_provider_url, "https://", "")}:sub" = "system:serviceaccount:toggle-master:analytics-service-sa"
+            "${replace(module.eks.oidc_provider_url, "https://", "")}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "analytics_sqs_dynamodb_policy" {
+  name = "${var.project_name}-analytics-sqs-dynamodb-policy"
+  role = aws_iam_role.analytics_sqs_dynamodb_irsa.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueUrl",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = module.sqs.queue_arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:DescribeTable",
+          "dynamodb:BatchWriteItem"
+        ]
+        Resource = module.dynamodb.table_arn
       }
     ]
   })
@@ -338,6 +393,36 @@ resource "aws_ssm_parameter" "evaluation_service_api_key" {
     Service     = "evaluation-service"
     ManagedBy   = "Terraform"
   }
+}
+
+resource "aws_ssm_parameter" "analytics_service_dynamodb_table" {
+  name        = "/analytics-service/dynamodb_table"
+  description = "Nome da tabela DynamoDB para o analytics-service"
+  type        = "SecureString"
+  value       = module.dynamodb.table_name
+
+  tags = {
+    Environment = "prod"
+    Service     = "analytics-service"
+    ManagedBy   = "Terraform"
+  }
+
+  depends_on = [module.dynamodb]
+}
+
+resource "aws_ssm_parameter" "analytics_service_sqs_url" {
+  name        = "/analytics-service/sqs_url"
+  description = "URL da fila SQS para o analytics-service"
+  type        = "SecureString"
+  value       = module.sqs.queue_id
+
+  tags = {
+    Environment = "prod"
+    Service     = "analytics-service"
+    ManagedBy   = "Terraform"
+  }
+
+  depends_on = [module.sqs]
 }
 
 # ==============================================================================

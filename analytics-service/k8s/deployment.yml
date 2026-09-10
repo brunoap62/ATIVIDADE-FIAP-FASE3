@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: analytics-service
+  namespace: toggle-master
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-service
+  template:
+    metadata:
+      labels:
+        app: analytics-service
+    spec:
+      containers:
+        - name: analytics-service
+          image: 052717076243.dkr.ecr.us-east-2.amazonaws.com/togglemaster/analytics-service
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8005
+          envFrom:
+            - configMapRef:
+                name: analytics-service-config
+            - secretRef:
+                name: analytics-service-secret
+            - secretRef:
+                name: global-aws-secret
+          startupProbe: # Testa se a aplicação está pronta para receber requisições
+            httpGet:
+              path: /health
+              port: 8005
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 10
+            initialDelaySeconds: 10
+          readinessProbe: # Verificar saude de recursos com REDIZ / PG
+            httpGet:
+              path: /health
+              port: 8005
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 15
+            initialDelaySeconds: 5
+          livenessProbe: # Verifica se a aplicação está viva
+            httpGet:
+              path: /health
+              port: 8005
+            failureThreshold: 5
+            successThreshold: 1
+            periodSeconds: 10
+            timeoutSeconds: 1
+            initialDelaySeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+      imagePullSecrets:
+        - name: ecr-registry-key

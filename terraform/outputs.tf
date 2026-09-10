@@ -164,17 +164,17 @@ output "sqs_queue_arn" {
 }
 
 # ------------------------------------------------------------------------------
-# 6. Banco de Dados NoSQL (DynamoDB) [COMENTADO]
+# 6. Banco de Dados NoSQL (DynamoDB)
 # ------------------------------------------------------------------------------
-# output "dynamodb_table_name" {
-#   description = "Nome da tabela DynamoDB para analytics"
-#   value       = module.dynamodb.table_name
-# }
-# 
-# output "dynamodb_table_arn" {
-#   description = "ARN da tabela DynamoDB para analytics"
-#   value       = module.dynamodb.table_arn
-# }
+output "dynamodb_table_name" {
+  description = "Nome da tabela DynamoDB para analytics"
+  value       = module.dynamodb.table_name
+}
+
+output "dynamodb_table_arn" {
+  description = "ARN da tabela DynamoDB para analytics"
+  value       = module.dynamodb.table_arn
+}
 
 # ------------------------------------------------------------------------------
 # 7. Storage & Registro de Containers (S3 [COMENTADO] & ECR)
@@ -291,4 +291,14 @@ output "ssm_evaluation_sqs_url_param" {
 output "ssm_evaluation_api_key_param" {
   description = "Nome do parametro SSM da service_api_key do evaluation-service"
   value       = aws_ssm_parameter.evaluation_service_api_key.name
+}
+
+output "ssm_analytics_dynamodb_table_param" {
+  description = "Nome do parametro SSM da tabela DynamoDB do analytics-service"
+  value       = aws_ssm_parameter.analytics_service_dynamodb_table.name
+}
+
+output "ssm_analytics_sqs_url_param" {
+  description = "Nome do parametro SSM da sqs_url do analytics-service"
+  value       = aws_ssm_parameter.analytics_service_sqs_url.name
 }
