@@ -15,3 +15,9 @@ variable "server_service_type" {
   type        = string
   default     = "ClusterIP"
 }
+
+variable "timeout_reconciliation" {
+  description = "Intervalo de checagem/reconciliação do ArgoCD com o repositório Git (ex: 30s, 60s, 180s)"
+  type        = string
+  default     = "30s"
+}

@@ -25,6 +25,12 @@ variable "db_instance_class" {
   default     = "db.t3.micro"
 }
 
+variable "db_name" {
+  description = "Nome do banco de dados inicial no RDS"
+  type        = string
+  default     = "auth_db"
+}
+
 variable "db_username" {
   description = "Usuário master dos bancos PostgreSQL"
   type        = string

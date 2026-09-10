@@ -45,8 +45,23 @@ module "rds" {
   subnet_ids            = module.network.private_subnet_ids
   eks_security_group_id = module.eks.cluster_security_group_id
   db_instance_class     = "db.t3.micro"
+  db_name               = "auth_db"
   db_username           = var.db_username
   db_password           = var.db_password
+}
+
+# Módulo de Banco de Dados Relacional Dedicado (AWS RDS PostgreSQL - Flag Service)
+module "flag_rds" {
+  source = "./modules/rds"
+
+  project_name          = "${var.project_name}-flag"
+  vpc_id                = module.network.vpc_id
+  subnet_ids            = module.network.private_subnet_ids
+  eks_security_group_id = module.eks.cluster_security_group_id
+  db_instance_class     = "db.t3.micro"
+  db_name               = "flag_db"
+  db_username           = var.flag_db_username
+  db_password           = var.flag_db_password
 }
 
 
@@ -122,8 +137,9 @@ module "ecr" {
 module "argocd" {
   source = "./modules/argocd"
 
-  namespace           = "argocd"
-  server_service_type = "ClusterIP"
+  namespace              = "argocd"
+  server_service_type    = "ClusterIP"
+  timeout_reconciliation = "30s"
 
   depends_on = [module.eks]
 }
@@ -171,6 +187,21 @@ resource "aws_ssm_parameter" "auth_service_master_key" {
     Service     = "auth-service"
     ManagedBy   = "Terraform"
   }
+}
+
+resource "aws_ssm_parameter" "flag_service_database_url" {
+  name        = "/flag-service/database_url"
+  description = "Connection string do RDS PostgreSQL para o flag-service com SSL habilitado"
+  type        = "SecureString"
+  value       = "postgres://${var.flag_db_username}:${var.flag_db_password}@${module.flag_rds.db_endpoint}/${module.flag_rds.db_name}?sslmode=require"
+
+  tags = {
+    Environment = "prod"
+    Service     = "flag-service"
+    ManagedBy   = "Terraform"
+  }
+
+  depends_on = [module.flag_rds]
 }
 
 # ==============================================================================

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: flag-service
+  namespace: toggle-master
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flag-service
+  template:
+    metadata:
+      labels:
+        app: flag-service
+    spec:
+      containers:
+        - name: flag-service
+          image: fase2-flag-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - configMapRef:
+                name: flag-service-config
+            - secretRef:
+                name: flag-service-secret
+          startupProbe: # Testa se a aplicação está pronta para receber requisições
+            httpGet:
+              path: /health
+              port: 8002
+            failureThreshold: 5
+            successThreshold: 1
+            timeoutSeconds: 2
+            periodSeconds: 10
+            initialDelaySeconds: 10
+          readinessProbe: # Verifica saúde da aplicação e conexões
+            httpGet:
+              path: /health
+              port: 8002
+            failureThreshold: 3
+            successThreshold: 1
+            timeoutSeconds: 2
+            periodSeconds: 15
+            initialDelaySeconds: 5
+          livenessProbe: # Verifica se a aplicação está viva
+            httpGet:
+              path: /health
+              port: 8002
+            failureThreshold: 5
+            successThreshold: 1
+            periodSeconds: 10
+            timeoutSeconds: 2
+            initialDelaySeconds: 5
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"

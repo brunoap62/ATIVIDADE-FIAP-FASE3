@@ -94,6 +94,27 @@ output "rds_database_name" {
   value       = module.rds.db_name
 }
 
+# --- Banco RDS PostgreSQL Dedicado (flag-service) ---
+output "flag_rds_endpoint" {
+  description = "Endpoint completo de conexão do banco RDS PostgreSQL do flag-service"
+  value       = module.flag_rds.db_endpoint
+}
+
+output "flag_rds_address" {
+  description = "Host do banco RDS PostgreSQL do flag-service"
+  value       = module.flag_rds.db_address
+}
+
+output "flag_rds_port" {
+  description = "Porta do banco RDS PostgreSQL do flag-service"
+  value       = module.flag_rds.db_port
+}
+
+output "flag_rds_database_name" {
+  description = "Nome do banco de dados inicial no RDS do flag-service"
+  value       = module.flag_rds.db_name
+}
+
 
 # ------------------------------------------------------------------------------
 # 5. Banco de Dados NoSQL (DynamoDB) [COMENTADO]
@@ -198,4 +219,9 @@ output "ssm_database_url_param" {
 output "ssm_master_key_param" {
   description = "Nome do parametro SSM da master_key"
   value       = aws_ssm_parameter.auth_service_master_key.name
+}
+
+output "ssm_flag_database_url_param" {
+  description = "Nome do parametro SSM da database_url do flag-service"
+  value       = aws_ssm_parameter.flag_service_database_url.name
 }

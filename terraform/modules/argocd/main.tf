@@ -12,6 +12,11 @@ resource "helm_release" "argocd" {
     name  = "server.service.type"
     value = var.server_service_type
   }
+
+  set {
+    name  = "configs.cm.timeout\\.reconciliation"
+    value = var.timeout_reconciliation
+  }
 }
 
 

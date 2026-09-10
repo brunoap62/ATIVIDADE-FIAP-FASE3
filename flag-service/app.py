@@ -26,7 +26,7 @@ if not DATABASE_URL or not AUTH_SERVICE_URL:
     log.critical("Erro: DATABASE_URL e AUTH_SERVICE_URL devem ser definidos.")
     sys.exit(1)
 
-# --- Pool de Conexão com o Banco ---
+# --- Pool de Conexão com o Banco & Auto-Migração ---
 # Inicializa o pool de conexões (Mín: 1, Máx: 5 conexões)
 try:
     pool = SimpleConnectionPool(1, 5, dsn=DATABASE_URL)
@@ -34,6 +34,50 @@ try:
 except psycopg2.OperationalError as e:
     log.critical(f"Erro fatal ao conectar ao PostgreSQL: {e}")
     sys.exit(1)
+
+def init_db(connection_pool):
+    """Executa a auto-migração criando a tabela flags e triggers de timestamp caso não existam"""
+    ddl_statements = """
+    CREATE TABLE IF NOT EXISTS flags (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL, 
+        description TEXT,
+        is_enabled BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+    RETURNS TRIGGER AS $$
+    BEGIN
+      NEW.updated_at = NOW();
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    DROP TRIGGER IF EXISTS set_timestamp ON flags;
+
+    CREATE TRIGGER set_timestamp
+    BEFORE UPDATE ON flags
+    FOR EACH ROW
+    EXECUTE PROCEDURE trigger_set_timestamp();
+    """
+    conn = None
+    try:
+        conn = connection_pool.getconn()
+        with conn.cursor() as cur:
+            cur.execute(ddl_statements)
+        conn.commit()
+        log.info("Auto-Migration concluída com sucesso: tabela 'flags' e triggers verificados/criados.")
+    except Exception as e:
+        if conn: conn.rollback()
+        log.critical(f"Erro fatal na auto-migração do banco de dados: {e}")
+        sys.exit(1)
+    finally:
+        if conn: connection_pool.putconn(conn)
+
+# Executa a auto-migração na inicialização
+init_db(pool)
 
 # --- Middleware de Autenticação ---
 def require_auth(f):
@@ -71,6 +115,7 @@ def health():
     return jsonify({"status": "ok"})
 
 @app.route('/flags', methods=['POST'])
+@app.route('/', methods=['POST'])
 @require_auth
 def create_flag():
     """ Cria uma nova definição de feature flag """
@@ -109,6 +154,7 @@ def create_flag():
         if conn: pool.putconn(conn)
 
 @app.route('/flags', methods=['GET'])
+@app.route('/', methods=['GET'])
 @require_auth
 def get_flags():
     """ Lista todas as feature flags """
@@ -128,6 +174,7 @@ def get_flags():
         if conn: pool.putconn(conn)
 
 @app.route('/flags/<string:name>', methods=['GET'])
+@app.route('/<string:name>', methods=['GET'])
 @require_auth
 def get_flag(name):
     """ Busca uma feature flag específica pelo nome """
@@ -149,6 +196,7 @@ def get_flag(name):
         if conn: pool.putconn(conn)
 
 @app.route('/flags/<string:name>', methods=['PUT'])
+@app.route('/<string:name>', methods=['PUT'])
 @require_auth
 def update_flag(name):
     """ Atualiza uma feature flag (descrição ou status 'is_enabled') """
@@ -197,6 +245,7 @@ def update_flag(name):
         if conn: pool.putconn(conn)
 
 @app.route('/flags/<string:name>', methods=['DELETE'])
+@app.route('/<string:name>', methods=['DELETE'])
 @require_auth
 def delete_flag(name):
     """ Deleta uma feature flag """
