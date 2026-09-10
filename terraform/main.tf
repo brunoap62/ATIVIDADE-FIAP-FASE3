@@ -136,6 +136,50 @@ resource "aws_iam_role_policy" "eks_node_sqs" {
   })
 }
 
+# IAM Role (IRSA) para o evaluation-service enviar mensagens para o SQS
+resource "aws_iam_role" "evaluation_sqs_irsa" {
+  name = "${var.project_name}-evaluation-sqs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = module.eks.oidc_provider_arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "${replace(module.eks.oidc_provider_url, "https://", "")}:sub" = "system:serviceaccount:toggle-master:evaluation-service-sa"
+            "${replace(module.eks.oidc_provider_url, "https://", "")}:aud" = "sts.amazonaws.com"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "evaluation_sqs_policy" {
+  name = "${var.project_name}-evaluation-sqs-policy"
+  role = aws_iam_role.evaluation_sqs_irsa.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueUrl",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = module.sqs.queue_arn
+      }
+    ]
+  })
+}
+
 # ==============================================================================
 # 7. Módulo de Armazenamento de Objetos (AWS S3) [COMENTADO]
 # ==============================================================================
@@ -287,7 +331,7 @@ resource "aws_ssm_parameter" "evaluation_service_api_key" {
   name        = "/evaluation-service/service_api_key"
   description = "Chave de API para comunicacao interna do evaluation-service com flag e targeting services"
   type        = "SecureString"
-  value       = var.master_key
+  value       = "tm_key_6b520f748ba29f18771ff653ea0444723ccc0cacd2276c2a6d25919a4d2737bb"
 
   tags = {
     Environment = "prod"

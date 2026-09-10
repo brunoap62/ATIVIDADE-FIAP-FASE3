@@ -15,6 +15,7 @@ spec:
       labels:
         app: evaluation-service
     spec:
+      serviceAccountName: evaluation-service-sa
       containers:
         - name: evaluation-service
           image: fase2-evaluation-service:latest
