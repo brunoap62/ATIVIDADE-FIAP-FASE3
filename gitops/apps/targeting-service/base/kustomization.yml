@@ -4,10 +4,10 @@ kind: Kustomization
 namespace: toggle-master
 
 resources:
-  - configmap.yml
-  - deployment.yml
-  - externalsecret.yml
-  - service.yml
+- configmap.yml
+- deployment.yml
+- externalsecret.yml
+- service.yml
 
 # ============================================
 # IMAGENS
@@ -17,6 +17,6 @@ resources:
 # O "name" deve corresponder ao placeholder no deployment.yaml
 # O "newName" e "newTag" são atualizados dinamicamente pelo CI/CD
 images:
-  - name: fase2-targeting-service
-    newName: fase2-targeting-service
-    newTag: latest
+- name: fase2-targeting-service
+  newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/targeting-service-default
+  newTag: e858170ac4df23786b88f03d6c06c8e8ad44b678
