@@ -13,4 +13,4 @@ resources:
 images:
 - name: fase2-analytics-service
   newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/analytics-service-default
-  newTag: latest
+  newTag: d27a77ff28361a25dcdf71fbbb6bcafbdfcbc798
