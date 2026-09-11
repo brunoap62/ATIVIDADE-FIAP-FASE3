@@ -77,12 +77,10 @@ module "targeting_rds" {
   db_password           = var.targeting_db_password
 }
 
-
 # ==============================================================================
 # 4. Módulo de Cache em Memória (AWS ElastiCache Redis)
 # ==============================================================================
 # Cache em memória e controle de sessão/flags com acesso seguro via SG do EKS.
-# As dependências dos módulos 'network' e 'eks' são resolvidas automaticamente.
 module "redis" {
   source = "./modules/redis"
 
@@ -115,137 +113,20 @@ module "sqs" {
   sqs_name = "${var.project_name}-evaluation-queue"
 }
 
-# Permissão IAM para os nós do EKS enviarem mensagens para a fila SQS
-resource "aws_iam_role_policy" "eks_node_sqs" {
-  name = "${var.project_name}-node-sqs-policy"
-  role = module.eks.node_role_name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:SendMessage",
-          "sqs:GetQueueUrl",
-          "sqs:GetQueueAttributes"
-        ]
-        Resource = module.sqs.queue_arn
-      }
-    ]
-  })
-}
-
-# IAM Role (IRSA) para o evaluation-service enviar mensagens para o SQS
-resource "aws_iam_role" "evaluation_sqs_irsa" {
-  name = "${var.project_name}-evaluation-sqs-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Federated = module.eks.oidc_provider_arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            "${replace(module.eks.oidc_provider_url, "https://", "")}:sub" = "system:serviceaccount:toggle-master:evaluation-service-sa"
-            "${replace(module.eks.oidc_provider_url, "https://", "")}:aud" = "sts.amazonaws.com"
-          }
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "evaluation_sqs_policy" {
-  name = "${var.project_name}-evaluation-sqs-policy"
-  role = aws_iam_role.evaluation_sqs_irsa.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:SendMessage",
-          "sqs:GetQueueUrl",
-          "sqs:GetQueueAttributes"
-        ]
-        Resource = module.sqs.queue_arn
-      }
-    ]
-  })
-}
-
-# IAM Role (IRSA) para o analytics-service ler do SQS e gravar no DynamoDB
-resource "aws_iam_role" "analytics_sqs_dynamodb_irsa" {
-  name = "${var.project_name}-analytics-irsa-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Federated = module.eks.oidc_provider_arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            "${replace(module.eks.oidc_provider_url, "https://", "")}:sub" = "system:serviceaccount:toggle-master:analytics-service-sa"
-            "${replace(module.eks.oidc_provider_url, "https://", "")}:aud" = "sts.amazonaws.com"
-          }
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "analytics_sqs_dynamodb_policy" {
-  name = "${var.project_name}-analytics-sqs-dynamodb-policy"
-  role = aws_iam_role.analytics_sqs_dynamodb_irsa.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:ReceiveMessage",
-          "sqs:DeleteMessage",
-          "sqs:GetQueueUrl",
-          "sqs:GetQueueAttributes"
-        ]
-        Resource = module.sqs.queue_arn
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "dynamodb:PutItem",
-          "dynamodb:GetItem",
-          "dynamodb:DescribeTable",
-          "dynamodb:BatchWriteItem"
-        ]
-        Resource = module.dynamodb.table_arn
-      }
-    ]
-  })
-}
-
 # ==============================================================================
-# 7. Módulo de Armazenamento de Objetos (AWS S3) [COMENTADO]
+# 7. Módulo IAM & IRSA (Permissões EKS Node, Evaluation e Analytics)
 # ==============================================================================
-# Bucket S3 configurado por workspace para armazenamento estático e artefatos de IaC.
-# module "s3" {
-#   source         = "./modules/s3"
-#   s3_bucket_name = "${var.project_name}-iac"
-#   s3_tags = {
-#     Iac = true
-#   }
-# }
+# Encapsula roles e políticas IAM para integração OIDC (IRSA) e nós EKS.
+module "iam_irsa" {
+  source = "./modules/iam-irsa"
+
+  project_name       = var.project_name
+  node_role_name     = module.eks.node_role_name
+  sqs_queue_arn      = module.sqs.queue_arn
+  dynamodb_table_arn = module.dynamodb.table_arn
+  oidc_provider_arn  = module.eks.oidc_provider_arn
+  oidc_provider_url  = module.eks.oidc_provider_url
+}
 
 # ==============================================================================
 # 8. Módulo de Registro de Contêineres (AWS ECR)
@@ -261,7 +142,6 @@ module "ecr" {
     "${var.project_name}/analytics-service-${terraform.workspace}"
   ]
 }
-
 
 # ==============================================================================
 # 9. Módulo GitOps / CD (ArgoCD)
@@ -291,138 +171,43 @@ module "ingress_nginx" {
 }
 
 # ==============================================================================
-# 11. Segredos e Parâmetros Criptografados (AWS SSM Parameter Store)
+# 11. Módulo de Parâmetros e Segredos (AWS SSM Parameter Store)
 # ==============================================================================
 # Armazena connection strings computadas e chaves criptografadas via AWS KMS.
-resource "aws_ssm_parameter" "auth_service_database_url" {
-  name        = "/auth-service/database_url"
-  description = "Connection string do RDS PostgreSQL para o auth-service com SSL habilitado"
-  type        = "SecureString"
-  value       = "postgres://${module.auth_rds.db_username}:${var.auth_db_password}@${module.auth_rds.db_endpoint}/${module.auth_rds.db_name}?sslmode=require"
+module "ssm_parameters" {
+  source = "./modules/ssm-parameters"
 
-  tags = {
-    Environment = "prod"
-    Service     = "auth-service"
-    ManagedBy   = "Terraform"
-  }
+  auth_db_username = module.auth_rds.db_username
+  auth_db_password = var.auth_db_password
+  auth_db_endpoint = module.auth_rds.db_endpoint
+  auth_db_name     = module.auth_rds.db_name
+  master_key       = var.master_key
 
-  depends_on = [module.auth_rds]
-}
+  flag_db_username = var.flag_db_username
+  flag_db_password = var.flag_db_password
+  flag_db_endpoint = module.flag_rds.db_endpoint
+  flag_db_name     = module.flag_rds.db_name
 
-resource "aws_ssm_parameter" "auth_service_master_key" {
-  name        = "/auth-service/master_key"
-  description = "Chave mestre de administracao para criacao de API keys no auth-service"
-  type        = "SecureString"
-  value       = var.master_key
+  targeting_db_username = var.targeting_db_username
+  targeting_db_password = var.targeting_db_password
+  targeting_db_endpoint = module.targeting_rds.db_endpoint
+  targeting_db_name     = module.targeting_rds.db_name
 
-  tags = {
-    Environment = "prod"
-    Service     = "auth-service"
-    ManagedBy   = "Terraform"
-  }
-}
+  redis_endpoint = module.redis.redis_endpoint
+  redis_port     = module.redis.redis_port
 
-resource "aws_ssm_parameter" "flag_service_database_url" {
-  name        = "/flag-service/database_url"
-  description = "Connection string do RDS PostgreSQL para o flag-service com SSL habilitado"
-  type        = "SecureString"
-  value       = "postgres://${var.flag_db_username}:${var.flag_db_password}@${module.flag_rds.db_endpoint}/${module.flag_rds.db_name}?sslmode=require"
+  sqs_queue_id               = module.sqs.queue_id
+  evaluation_service_api_key = "tm_key_6b520f748ba29f18771ff653ea0444723ccc0cacd2276c2a6d25919a4d2737bb"
+  dynamodb_table_name        = module.dynamodb.table_name
 
-  tags = {
-    Environment = "prod"
-    Service     = "flag-service"
-    ManagedBy   = "Terraform"
-  }
-
-  depends_on = [module.flag_rds]
-}
-
-resource "aws_ssm_parameter" "targeting_service_database_url" {
-  name        = "/targeting-service/database_url"
-  description = "Connection string do RDS PostgreSQL para o targeting-service com SSL habilitado"
-  type        = "SecureString"
-  value       = "postgres://${var.targeting_db_username}:${var.targeting_db_password}@${module.targeting_rds.db_endpoint}/${module.targeting_rds.db_name}?sslmode=require"
-
-  tags = {
-    Environment = "prod"
-    Service     = "targeting-service"
-    ManagedBy   = "Terraform"
-  }
-
-  depends_on = [module.targeting_rds]
-}
-
-resource "aws_ssm_parameter" "evaluation_service_redis_url" {
-  name        = "/evaluation-service/redis_url"
-  description = "Connection string do Redis ElastiCache para o evaluation-service"
-  type        = "SecureString"
-  value       = "redis://${module.redis.redis_endpoint}:${module.redis.redis_port}"
-
-  tags = {
-    Environment = "prod"
-    Service     = "evaluation-service"
-    ManagedBy   = "Terraform"
-  }
-
-  depends_on = [module.redis]
-}
-
-resource "aws_ssm_parameter" "evaluation_service_sqs_url" {
-  name        = "/evaluation-service/sqs_url"
-  description = "URL da fila SQS para o evaluation-service"
-  type        = "SecureString"
-  value       = module.sqs.queue_id
-
-  tags = {
-    Environment = "prod"
-    Service     = "evaluation-service"
-    ManagedBy   = "Terraform"
-  }
-
-  depends_on = [module.sqs]
-}
-
-resource "aws_ssm_parameter" "evaluation_service_api_key" {
-  name        = "/evaluation-service/service_api_key"
-  description = "Chave de API para comunicacao interna do evaluation-service com flag e targeting services"
-  type        = "SecureString"
-  value       = "tm_key_6b520f748ba29f18771ff653ea0444723ccc0cacd2276c2a6d25919a4d2737bb"
-
-  tags = {
-    Environment = "prod"
-    Service     = "evaluation-service"
-    ManagedBy   = "Terraform"
-  }
-}
-
-resource "aws_ssm_parameter" "analytics_service_dynamodb_table" {
-  name        = "/analytics-service/dynamodb_table"
-  description = "Nome da tabela DynamoDB para o analytics-service"
-  type        = "SecureString"
-  value       = module.dynamodb.table_name
-
-  tags = {
-    Environment = "prod"
-    Service     = "analytics-service"
-    ManagedBy   = "Terraform"
-  }
-
-  depends_on = [module.dynamodb]
-}
-
-resource "aws_ssm_parameter" "analytics_service_sqs_url" {
-  name        = "/analytics-service/sqs_url"
-  description = "URL da fila SQS para o analytics-service"
-  type        = "SecureString"
-  value       = module.sqs.queue_id
-
-  tags = {
-    Environment = "prod"
-    Service     = "analytics-service"
-    ManagedBy   = "Terraform"
-  }
-
-  depends_on = [module.sqs]
+  depends_on = [
+    module.auth_rds,
+    module.flag_rds,
+    module.targeting_rds,
+    module.redis,
+    module.dynamodb,
+    module.sqs
+  ]
 }
 
 # ==============================================================================

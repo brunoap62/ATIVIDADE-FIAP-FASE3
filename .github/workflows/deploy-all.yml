@@ -1,0 +1,45 @@
+name: 🚀 Deploy All Services - Trigger All Pipelines
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: "Branch para execução das pipelines"
+        required: true
+        default: "main"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch-all:
+    name: 🚀 Trigger ${{ matrix.service_name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service_name: "Auth Service"
+            workflow_file: "ci-auth-service.yml"
+          - service_name: "Flag Service"
+            workflow_file: "ci-flag-service.yml"
+          - service_name: "Targeting Service"
+            workflow_file: "ci-targeting-service.yml"
+          - service_name: "Evaluation Service"
+            workflow_file: "ci-evaluation-service.yml"
+          - service_name: "Analytics Service"
+            workflow_file: "ci-analytics-service.yml"
+
+    steps:
+      - name: 📥 Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: ⚡ Disparar Workflow do Microsserviço
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ github.event.inputs.target_branch || github.ref_name }}"
+          echo "Disparando pipeline '${{ matrix.service_name }}' (${{ matrix.workflow_file }}) na branch '${BRANCH}'..."
+          gh workflow run "${{ matrix.workflow_file }}" --ref "${BRANCH}"
+          echo "✅ Pipeline '${{ matrix.service_name }}' iniciada com sucesso!"

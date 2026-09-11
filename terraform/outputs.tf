@@ -236,7 +236,20 @@ output "ingress_nginx_chart_version" {
 }
 
 # ------------------------------------------------------------------------------
-# 9. External Secrets Operator & SSM
+# 9. IAM IRSA Roles
+# ------------------------------------------------------------------------------
+output "evaluation_sqs_role_arn" {
+  description = "ARN da IAM Role do evaluation-service para IRSA"
+  value       = module.iam_irsa.evaluation_sqs_role_arn
+}
+
+output "analytics_sqs_dynamodb_role_arn" {
+  description = "ARN da IAM Role do analytics-service para IRSA"
+  value       = module.iam_irsa.analytics_sqs_dynamodb_role_arn
+}
+
+# ------------------------------------------------------------------------------
+# 10. External Secrets Operator & SSM
 # ------------------------------------------------------------------------------
 output "external_secrets_role_arn" {
   description = "ARN da IAM Role associada ao External Secrets Operator via IRSA"
@@ -245,45 +258,45 @@ output "external_secrets_role_arn" {
 
 output "ssm_database_url_param" {
   description = "Nome do parametro SSM da database_url"
-  value       = aws_ssm_parameter.auth_service_database_url.name
+  value       = module.ssm_parameters.auth_database_url_param
 }
 
 output "ssm_master_key_param" {
   description = "Nome do parametro SSM da master_key"
-  value       = aws_ssm_parameter.auth_service_master_key.name
+  value       = module.ssm_parameters.auth_master_key_param
 }
 
 output "ssm_flag_database_url_param" {
   description = "Nome do parametro SSM da database_url do flag-service"
-  value       = aws_ssm_parameter.flag_service_database_url.name
+  value       = module.ssm_parameters.flag_database_url_param
 }
 
 output "ssm_targeting_database_url_param" {
   description = "Nome do parametro SSM da database_url do targeting-service"
-  value       = aws_ssm_parameter.targeting_service_database_url.name
+  value       = module.ssm_parameters.targeting_database_url_param
 }
 
 output "ssm_evaluation_redis_url_param" {
   description = "Nome do parametro SSM da redis_url do evaluation-service"
-  value       = aws_ssm_parameter.evaluation_service_redis_url.name
+  value       = module.ssm_parameters.evaluation_redis_url_param
 }
 
 output "ssm_evaluation_sqs_url_param" {
   description = "Nome do parametro SSM da sqs_url do evaluation-service"
-  value       = aws_ssm_parameter.evaluation_service_sqs_url.name
+  value       = module.ssm_parameters.evaluation_sqs_url_param
 }
 
 output "ssm_evaluation_api_key_param" {
   description = "Nome do parametro SSM da service_api_key do evaluation-service"
-  value       = aws_ssm_parameter.evaluation_service_api_key.name
+  value       = module.ssm_parameters.evaluation_api_key_param
 }
 
 output "ssm_analytics_dynamodb_table_param" {
   description = "Nome do parametro SSM da tabela DynamoDB do analytics-service"
-  value       = aws_ssm_parameter.analytics_service_dynamodb_table.name
+  value       = module.ssm_parameters.analytics_dynamodb_table_param
 }
 
 output "ssm_analytics_sqs_url_param" {
   description = "Nome do parametro SSM da sqs_url do analytics-service"
-  value       = aws_ssm_parameter.analytics_service_sqs_url.name
+  value       = module.ssm_parameters.analytics_sqs_url_param
 }
