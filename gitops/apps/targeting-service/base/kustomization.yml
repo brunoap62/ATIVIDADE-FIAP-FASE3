@@ -19,4 +19,4 @@ resources:
 images:
 - name: fase2-targeting-service
   newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/targeting-service-default
-  newTag: 4f5c3bdd8361b6bb8ed78653cfb92101412df5d0
+  newTag: 33ab02a8b5d2abebfecf44242acdab084a555bef
