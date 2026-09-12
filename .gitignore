@@ -6,6 +6,7 @@
 *.old
 DUVIDAS_TECHCHALLANGE.MD
 IAPLANOS/
+Desafios.md
 # Terraform
 **/.terraform/
 *.tfstate
