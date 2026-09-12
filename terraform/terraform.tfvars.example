@@ -2,8 +2,12 @@
 # O arquivo 'terraform.tfvars' já é ignorado pelo Git (.gitignore).
 
 project_name = "super-app"
-cluster_name = "jojo-eks-cluster"
 aws_region   = "us-east-2"
+
+# Configurações de Rede (VPC e Subnets)
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
 
 # Credenciais Master do Banco PostgreSQL (auth-service - auth_db)
 auth_db_username = "auth_admin"
@@ -19,3 +23,19 @@ targeting_db_password = "SubstituaPorUmaSenhaSegura789!"
 
 # Chave Mestre de Administração (auth-service)
 master_key = "SubstituaPorUmaChaveSecreta123"
+
+# ==============================================================================
+# Configurações Opcionais de Recursos & Dimensionamento (FinOps Defaults)
+# ==============================================================================
+# Tipos de Instância dos Nós do EKS (Worker Nodes)
+node_instance_types = ["t3.medium"]
+node_desired_size   = 2
+node_min_size       = 2
+node_max_size       = 4
+
+# Tipo de Instância para os Bancos RDS PostgreSQL (Free Tier: db.t3.micro)
+rds_instance_class = "db.t3.micro"
+
+# Tipo de Instância para o Cluster ElastiCache Redis (Free Tier: cache.t3.micro)
+redis_node_type = "cache.t3.micro"
+

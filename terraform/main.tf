@@ -7,10 +7,10 @@ module "network" {
 
   project_name         = var.project_name
   cluster_name         = "${var.project_name}-eks-cluster"
-  vpc_cidr             = "10.0.0.0/16"
+  vpc_cidr             = var.vpc_cidr
   availability_zones   = ["${var.aws_region}a", "${var.aws_region}b"]
-  public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnet_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  private_subnet_cidrs = var.private_subnet_cidrs
 }
 
 # ==============================================================================
@@ -26,10 +26,10 @@ module "eks" {
   cluster_version     = "1.31"
   vpc_id              = module.network.vpc_id
   subnet_ids          = module.network.private_subnet_ids
-  node_instance_types = ["t3.medium"]
-  desired_size        = 2
-  min_size            = 2
-  max_size            = 4
+  node_instance_types = var.node_instance_types
+  desired_size        = var.node_desired_size
+  min_size            = var.node_min_size
+  max_size            = var.node_max_size
 }
 
 # ==============================================================================
@@ -43,7 +43,7 @@ module "auth_rds" {
   vpc_id                = module.network.vpc_id
   subnet_ids            = module.network.private_subnet_ids
   eks_security_group_id = module.eks.cluster_security_group_id
-  db_instance_class     = "db.t3.micro"
+  db_instance_class     = var.rds_instance_class
   db_name               = "auth_db"
   db_username           = var.auth_db_username
   db_password           = var.auth_db_password
@@ -57,7 +57,7 @@ module "flag_rds" {
   vpc_id                = module.network.vpc_id
   subnet_ids            = module.network.private_subnet_ids
   eks_security_group_id = module.eks.cluster_security_group_id
-  db_instance_class     = "db.t3.micro"
+  db_instance_class     = var.rds_instance_class
   db_name               = "flag_db"
   db_username           = var.flag_db_username
   db_password           = var.flag_db_password
@@ -71,7 +71,7 @@ module "targeting_rds" {
   vpc_id                = module.network.vpc_id
   subnet_ids            = module.network.private_subnet_ids
   eks_security_group_id = module.eks.cluster_security_group_id
-  db_instance_class     = "db.t3.micro"
+  db_instance_class     = var.rds_instance_class
   db_name               = "targeting_db"
   db_username           = var.targeting_db_username
   db_password           = var.targeting_db_password
@@ -88,7 +88,7 @@ module "redis" {
   vpc_id                = module.network.vpc_id
   subnet_ids            = module.network.private_subnet_ids
   eks_security_group_id = module.eks.cluster_security_group_id
-  node_type             = "cache.t3.micro"
+  node_type             = var.redis_node_type
   engine_version        = "7.0"
 }
 
