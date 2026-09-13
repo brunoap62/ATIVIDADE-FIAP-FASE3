@@ -1,4 +1,10 @@
 import os
+import sys
+from pathlib import Path
+
+# Adiciona o diretório raiz do analytics-service ao sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import pytest
 from unittest.mock import patch, MagicMock
 

@@ -47,9 +47,11 @@ jobs:
 
       - name: 🧪 Executar Testes Unitários
         working-directory: ${{ env.SERVICE_DIR }}
+        env:
+          PYTHONPATH: .
         run: |
           echo "Executando testes unitários com pytest..."
-          pytest tests/ -v
+          python -m pytest tests/ -v
 
   # ==============================================================================
   # STAGE 1 (PARALELO): Linter & Análise Estática
