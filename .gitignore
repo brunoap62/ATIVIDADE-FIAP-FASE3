@@ -5,6 +5,7 @@
 *.pdf
 *.old
 DUVIDAS_TECHCHALLANGE.MD
+ANNOTATIONS/
 IAPLANOS/
 Desafios.md
 # Terraform
