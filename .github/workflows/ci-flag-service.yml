@@ -24,10 +24,10 @@ env:
 
 jobs:
   # ==============================================================================
-  # STAGE 1: Testes Unitários & Análise Estática (Linter)
+  # STAGE 1 (PARALELO): Testes Unitários
   # ==============================================================================
-  test-and-lint:
-    name: 🧪 Stage 1 - Unit Tests & Linter
+  unit-tests:
+    name: 🧪 Stage 1A - Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -39,11 +39,11 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 📦 Instalar Dependências e Ferramental de Teste
+      - name: 📦 Instalar Dependências e Test Runner
         working-directory: ${{ env.SERVICE_DIR }}
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest flake8
+          pip install -r requirements.txt pytest
 
       - name: 🧪 Executar Testes Unitários
         working-directory: ${{ env.SERVICE_DIR }}
@@ -51,42 +51,66 @@ jobs:
           echo "Executando testes unitários com pytest..."
           pytest tests/ -v
 
-      - name: 🔍 Executar Linter (flake8)
-        working-directory: ${{ env.SERVICE_DIR }}
-        run: |
-          echo "Executando análise de erros de sintaxe e estilo com flake8..."
-          # Para erros de sintaxe graves ou nomes indefinidos
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Para avisos gerais de complexidade/estilo (informativo)
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-      - name: 📊 Test & Lint Summary
-        run: |
-          echo "## 🧪 Stage 1: Test & Lint Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Service:** \`${{ env.SERVICE_DIR }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Unit Tests:** ✅ Passed (\`pytest\`)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Linter:** ✅ Passed (\`flake8\`)" >> $GITHUB_STEP_SUMMARY
-
   # ==============================================================================
-  # STAGE 2: DevSecOps Scan (SAST com Horusec & SCA com Trivy FS)
+  # STAGE 1 (PARALELO): Linter & Análise Estática
   # ==============================================================================
-  security-sast-sca:
-    name: 🛡️ Stage 2 - SAST (Horusec) & SCA (Trivy)
+  lint-analysis:
+    name: 🔍 Stage 1B - Linter (flake8)
     runs-on: ubuntu-latest
-    needs: test-and-lint
 
     steps:
       - name: 📥 Checkout código
         uses: actions/checkout@v4
 
-      - name: 🔒 SAST (Static Application Security Testing) - Horusec
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Instalar flake8
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      - name: 🔍 Executar Linter (flake8)
+        working-directory: ${{ env.SERVICE_DIR }}
+        run: |
+          echo "Executando análise de erros graves de sintaxe..."
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          echo "Executando análise geral de complexidade e estilo..."
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  # ==============================================================================
+  # STAGE 1 (PARALELO): SAST com Horusec
+  # ==============================================================================
+  sast-horusec:
+    name: 🔒 Stage 1C - SAST (Horusec)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🔒 Executar Horusec CLI
         run: |
           echo "Instalando Horusec CLI..."
           curl -fsSL https://raw.githubusercontent.com/ZupIT/horusec/main/deployments/scripts/install.sh | bash -s latest
           echo "Executando SAST com Horusec na pasta ${{ env.SERVICE_DIR }}..."
           horusec start -p ./${{ env.SERVICE_DIR }} -P "$(pwd)" --return-error=true -s="CRITICAL" --log-level=error
 
-      - name: 🛡️ SCA (Software Composition Analysis) - Trivy FS
+  # ==============================================================================
+  # STAGE 1 (PARALELO): SCA com Trivy FS
+  # ==============================================================================
+  sca-trivy-fs:
+    name: 🛡️ Stage 1D - SCA (Trivy FS)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🛡️ Executar Trivy FS
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
@@ -95,19 +119,13 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
 
-      - name: 📊 Security Scan Summary
-        run: |
-          echo "## 🛡️ Stage 2: Security Scan (SAST & SCA) Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **SAST (Horusec):** ✅ Passed (Zero vulnerabilidades CRÍTICAS)" >> $GITHUB_STEP_SUMMARY
-          echo "- **SCA (Trivy FS):** ✅ Passed (Zero dependências CRÍTICAS)" >> $GITHUB_STEP_SUMMARY
-
   # ==============================================================================
-  # STAGE 3: Build Docker & Container Image Security Scan
+  # STAGE 2: Build Docker & Container Image Security Scan (Fan-In após Stage 1)
   # ==============================================================================
   build-and-container-scan:
-    name: 🐳 Stage 3 - Docker Build & Image Scan
+    name: 🐳 Stage 2 - Build Docker & Container Scan
     runs-on: ubuntu-latest
-    needs: security-sast-sca
+    needs: [unit-tests, lint-analysis, sast-horusec, sca-trivy-fs]
     outputs:
       image-tag: ${{ steps.set-tag.outputs.tag }}
       ecr-registry: ${{ steps.login-ecr.outputs.registry }}
@@ -163,21 +181,11 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "✅ Imagem enviada ao ECR: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-      - name: 📊 Container Scan & Build Summary
-        run: |
-          echo "## 🐳 Stage 3: Build & Container Scan Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Container Scan:** ✅ Passed (Trivy Image Scan - Zero CRITICAL)" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "- **ECR Push:** ✅ Pushed tag \`${{ steps.set-tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **ECR Push:** ⏭️ Skipped (Pull Request mode)" >> $GITHUB_STEP_SUMMARY
-          fi
-
   # ==============================================================================
-  # STAGE 4: Atualizar Manifests GitOps no Repositório
+  # STAGE 3: Atualizar Manifests GitOps no Repositório
   # ==============================================================================
   update-gitops:
-    name: 📝 Stage 4 - Update GitOps Manifests
+    name: 📝 Stage 3 - Update GitOps Manifests
     runs-on: ubuntu-latest
     needs: build-and-container-scan
     if: github.event_name != 'pull_request'
@@ -193,7 +201,6 @@ jobs:
         run: |
           curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           sudo mv kustomize /usr/local/bin/
-          kustomize version
 
       - name: 🔑 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -239,20 +246,11 @@ jobs:
             echo "✅ Changes pushed to repository"
           fi
 
-      - name: 📊 GitOps Summary
-        env:
-          IMAGE_TAG: ${{ needs.build-and-container-scan.outputs.image-tag }}
-        run: |
-          echo "## 📝 GitOps Update Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Service:** \`flag-service\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **New Image Tag:** \`$IMAGE_TAG\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ✅ Manifests Updated and Committed to Git" >> $GITHUB_STEP_SUMMARY
-
   # ==============================================================================
-  # STAGE 5: Validar Manifests Kustomize
+  # STAGE 4: Validar Manifests Kustomize
   # ==============================================================================
   validate-manifests:
-    name: ✅ Stage 5 - Validate K8s Manifests
+    name: ✅ Stage 4 - Validate K8s Manifests
     runs-on: ubuntu-latest
     needs: update-gitops
     if: github.event_name != 'pull_request'
@@ -275,17 +273,11 @@ jobs:
           kustomize build . > /tmp/manifests.yaml
           echo "✅ Manifests are valid"
 
-      - name: 📊 Validation Summary
-        run: |
-          echo "## ✅ Validation Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Status:** ✅ Manifests Validated" >> $GITHUB_STEP_SUMMARY
-          echo "- **Note:** ArgoCD will auto-sync changes to EKS" >> $GITHUB_STEP_SUMMARY
-
   # ==============================================================================
-  # STAGE 6: Garantir Aplicação no ArgoCD
+  # STAGE 5: Garantir Aplicação no ArgoCD
   # ==============================================================================
   ensure-argocd-app:
-    name: 🚀 Stage 6 - Ensure ArgoCD Application
+    name: 🚀 Stage 5 - Ensure ArgoCD Application
     runs-on: ubuntu-latest
     needs: [update-gitops, validate-manifests]
     if: github.event_name != 'pull_request'
@@ -327,23 +319,25 @@ jobs:
           fi
 
   # ==============================================================================
-  # STAGE 7: Pipeline Summary Geral
+  # STAGE 6: Pipeline Summary Geral (Quality Gate Report)
   # ==============================================================================
   pipeline-summary:
-    name: 📊 Stage 7 - Pipeline Summary
+    name: 📊 Stage 6 - Quality Gate & Summary
     runs-on: ubuntu-latest
-    needs: [test-and-lint, security-sast-sca, build-and-container-scan, update-gitops, validate-manifests, ensure-argocd-app]
+    needs: [unit-tests, lint-analysis, sast-horusec, sca-trivy-fs, build-and-container-scan, update-gitops, validate-manifests, ensure-argocd-app]
     if: always()
 
     steps:
       - name: 📊 Complete Pipeline Summary
         run: |
-          echo "## 🛡️ DevSecOps & GitOps Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ DevSecOps Multi-Stage Quality Gate Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Estágio | Status | Detalhes |" >> $GITHUB_STEP_SUMMARY
-          echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🧪 **1. Unit Test & Lint** | ${{ needs.test-and-lint.result == 'success' && '✅ Passou' || '❌ Falhou' }} | pytest & flake8 |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔒 **2. SAST & SCA** | ${{ needs.security-sast-sca.result == 'success' && '✅ Passou' || '❌ Falhou' }} | Horusec & Trivy FS (Quality Gate) |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🐳 **3. Docker & Container Scan** | ${{ needs.build-and-container-scan.result == 'success' && '✅ Passou' || '❌ Falhou' }} | Trivy Image Scan (Quality Gate) |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📝 **4. GitOps Update** | ${{ needs.update-gitops.result == 'success' && '✅ Passou' || (github.event_name == 'pull_request' && '⏭️ Ignorado (PR)' || '❌ Falhou') }} | Kustomize & Git Sync |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚀 **5. ArgoCD Application** | ${{ needs.ensure-argocd-app.result == 'success' && '✅ Passou' || (github.event_name == 'pull_request' && '⏭️ Ignorado (PR)' || '❌ Falhou') }} | Rollout no EKS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Estágio | Job | Status | Detalhes |" >> $GITHUB_STEP_SUMMARY
+          echo "| :--- | :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 **Stage 1A** | Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ Passou' || '❌ Falhou' }} | pytest tests/ |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 **Stage 1B** | Linter | ${{ needs.lint-analysis.result == 'success' && '✅ Passou' || '❌ Falhou' }} | flake8 |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 **Stage 1C** | SAST | ${{ needs.sast-horusec.result == 'success' && '✅ Passou' || '❌ Falhou' }} | Horusec (Bloqueia CRITICAL) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🛡️ **Stage 1D** | SCA | ${{ needs.sca-trivy-fs.result == 'success' && '✅ Passou' || '❌ Falhou' }} | Trivy FS (Bloqueia CRITICAL) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🐳 **Stage 2** | Build & Container Scan | ${{ needs.build-and-container-scan.result == 'success' && '✅ Passou' || '❌ Falhou' }} | Trivy Image & ECR Push |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📝 **Stage 3** | GitOps Update | ${{ needs.update-gitops.result == 'success' && '✅ Passou' || (github.event_name == 'pull_request' && '⏭️ Ignorado (PR)' || '❌ Falhou') }} | Kustomize Manifests |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚀 **Stage 5** | ArgoCD Application | ${{ needs.ensure-argocd-app.result == 'success' && '✅ Passou' || (github.event_name == 'pull_request' && '⏭️ Ignorado (PR)' || '❌ Falhou') }} | Rollout no EKS |" >> $GITHUB_STEP_SUMMARY
