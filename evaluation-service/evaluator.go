@@ -1,15 +1,14 @@
 package main
 
 import (
-	// "context"
-	"os"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -108,7 +107,10 @@ func (a *App) fetchFlag(flagName string) (*Flag, error) {
 	if apiKey == "" {
 		apiKey = os.Getenv("SERVICE_API_KEY")
 	}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criar requisição para flag-service: %w", err)
+	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	
 	resp, err := a.HttpClient.Do(req)
@@ -124,7 +126,10 @@ func (a *App) fetchFlag(flagName string) (*Flag, error) {
 		return nil, fmt.Errorf("flag-service retornou status %d", resp.StatusCode)
 	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao ler resposta do flag-service: %w", err)
+	}
 	var flag Flag
 	if err := json.Unmarshal(body, &flag); err != nil {
 		return nil, fmt.Errorf("erro ao desserializar resposta do flag-service: %w", err)
@@ -138,7 +143,10 @@ func (a *App) fetchRule(flagName string) (*TargetingRule, error) {
 	if apiKey == "" {
 		apiKey = os.Getenv("SERVICE_API_KEY")
 	}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao criar requisição para targeting-service: %w", err)
+	}
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	
 	resp, err := a.HttpClient.Do(req)
@@ -154,7 +162,10 @@ func (a *App) fetchRule(flagName string) (*TargetingRule, error) {
 		return nil, fmt.Errorf("targeting-service retornou status %d", resp.StatusCode)
 	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao ler resposta do targeting-service: %w", err)
+	}
 	var rule TargetingRule
 	if err := json.Unmarshal(body, &rule); err != nil {
 		return nil, fmt.Errorf("erro ao desserializar resposta do targeting-service: %w", err)
@@ -194,8 +205,8 @@ func (a *App) runEvaluationLogic(info *CombinedFlagInfo, userID string) bool {
 }
 
 func getDeterministicBucket(input string) int {
-	// Usamos SHA1 (rápido) e pegamos os primeiros 4 bytes
-	hasher := sha1.New()
+	// Usamos SHA256 (seguro e criptograficamente robusto) e pegamos os primeiros 4 bytes
+	hasher := sha256.New()
 	hasher.Write([]byte(input))
 	hash := hasher.Sum(nil)
 	
