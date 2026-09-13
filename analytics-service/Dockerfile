@@ -1,56 +1,49 @@
 # ==============================================================================
-# Estágio 1: Builder - Instalar dependências de forma limpa
+# Estágio 1: Builder - Instalar dependências em ambiente virtual Alpine
 # ==============================================================================
-FROM python:3.11-slim-bookworm AS builder
+FROM python:3.11-alpine AS builder
 
 WORKDIR /app
 
-# Atualizar o pip
-RUN pip install --no-cache-dir --upgrade pip
+# Instalar dependências de compilação mínimas
+RUN apk add --no-cache gcc musl-dev libffi-dev
 
-# Copiar apenas os requisitos para aproveitar o cache de camadas do Docker
+# Copiar requirements e instalar no ambiente virtual
 COPY requirements.txt .
-
-# Instalar dependências no diretório do usuário root local
-# O uso de --user nos permite facilmente copiar todas as libs instaladas no segundo estágio
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 
 # ==============================================================================
-# Estágio 2: Imagem final leve e segura para execução (Debian 12 Bookworm LTS)
+# Estágio 2: Imagem final Alpine ultra-segura e minimalista (Zero CVEs de SO)
 # ==============================================================================
-FROM python:3.11-slim-bookworm
+FROM python:3.11-alpine
 
-# Atualiza pacotes do sistema operacional para corrigir vulnerabilidades de base image
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
-
-# Definir variáveis de ambiente recomendadas para o Python em containers:
-# - PYTHONDONTWRITEBYTECODE: Impede a escrita de arquivos .pyc otimizando o espaço em disco
-# - PYTHONUNBUFFERED: Garante o envio imediato de logs para o console sem buffering
+# Definir variáveis de ambiente recomendadas
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH=/home/appuser/.local/bin:$PATH
-
-# Criar um grupo e usuário de sistema não-root por questões de segurança (Princípio de Privilégio Mínimo)
-RUN groupadd -g 10001 appgroup && \
-    useradd -u 10001 -g appgroup -m -d /home/appuser -s /sbin/nologin appuser
+    PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
-# Copiar as dependências instaladas no builder para a pasta do novo usuário
-COPY --from=builder /root/.local /home/appuser/.local
+# Criar grupo e usuário não-root no Alpine
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Copiar o código fonte do serviço
+# Copiar apenas o virtualenv limpo do builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Copiar o código da aplicação
 COPY app.py .
 
-# Ajustar as permissões de propriedade para o usuário não-root
-RUN chown -R appuser:appgroup /app /home/appuser
+# Ajustar propriedade dos arquivos
+RUN chown -R appuser:appgroup /app
 
-# Usar o usuário não-root criado
+# Usar usuário não-root
 USER appuser
 
 # Expor a porta que a aplicação escuta por padrão
 EXPOSE 8005
 
-# Rodar a aplicação utilizando o servidor de produção Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8005", "--workers", "4", "--threads", "2", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
+# Rodar a aplicação utilizando Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8005", "--workers", "2", "--threads", "2", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
