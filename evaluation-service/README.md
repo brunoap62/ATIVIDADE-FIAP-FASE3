@@ -49,8 +49,8 @@ Ele funciona da seguinte forma:
     FLAG_SERVICE_URL="http://localhost:8002"
     TARGETING_SERVICE_URL="http://localhost:8003"
     
-    # Chave de API que você criou no passo 2
-    SERVICE_API_KEY="SUA_CHAVE_DE_SERVICO"
+    # Chave de autenticação criada no passo anterior
+    # SERVICE_API_KEY=<sua_chave>
     
     # --- Configuração da AWS (Obrigatório para o desafio) ---
     # Cole a URL da fila SQS que você criou no console da AWS

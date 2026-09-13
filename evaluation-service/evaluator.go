@@ -103,15 +103,13 @@ func (a *App) fetchFromServices(flagName string) (*CombinedFlagInfo, error) {
 func (a *App) fetchFlag(flagName string) (*Flag, error) {
 	url := fmt.Sprintf("%s/flags/%s", a.FlagServiceURL, flagName)
 
-	apiKey := a.ApiKey
-	if apiKey == "" {
-		apiKey = os.Getenv("SERVICE_API_KEY")
-	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao criar requisição para flag-service: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
+	if a.ApiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+a.ApiKey)
+	}
 	
 	resp, err := a.HttpClient.Do(req)
 	if err != nil {
@@ -139,15 +137,13 @@ func (a *App) fetchFlag(flagName string) (*Flag, error) {
 
 func (a *App) fetchRule(flagName string) (*TargetingRule, error) {
 	url := fmt.Sprintf("%s/rules/%s", a.TargetingServiceURL, flagName)
-	apiKey := a.ApiKey
-	if apiKey == "" {
-		apiKey = os.Getenv("SERVICE_API_KEY")
-	}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao criar requisição para targeting-service: %w", err)
 	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
+	if a.ApiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+a.ApiKey)
+	}
 	
 	resp, err := a.HttpClient.Do(req)
 	if err != nil {

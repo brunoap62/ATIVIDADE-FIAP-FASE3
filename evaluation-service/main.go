@@ -52,7 +52,7 @@ func main() {
 		log.Fatal("TARGETING_SERVICE_URL deve ser definida")
 	}
 
-	apiKey := os.Getenv("SERVICE_API_KEY")
+	svcKey := os.Getenv("SERVICE_API_KEY")
 
 	// SQS é opcional no dev local, mas obrigatório em prod
 	sqsQueueURL := os.Getenv("AWS_SQS_URL")
@@ -101,7 +101,7 @@ func main() {
 		HttpClient:          httpClient,
 		FlagServiceURL:      flagSvcURL,
 		TargetingServiceURL: targetingSvcURL,
-		ApiKey:              apiKey,
+		ApiKey:              svcKey,
 	}
 
 	// --- Rotas (compatibilidade com Ingress rewrite e chamadas diretas) ---
