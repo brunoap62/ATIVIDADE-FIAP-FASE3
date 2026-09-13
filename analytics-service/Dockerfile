@@ -1,47 +1,53 @@
-# Estágio 1: Builder para instalar as dependências
-FROM python:3.12-slim AS builder
+# ==============================================================================
+# Estágio 1: Builder - Instalar dependências de forma limpa
+# ==============================================================================
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Instalar dependências de compilação básicas, se necessárias
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Atualizar o pip
+RUN pip install --no-cache-dir --upgrade pip
 
-# Criar um ambiente virtual para isolar as dependências
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Copiar e instalar dependências do requirements.txt
+# Copiar apenas os requisitos para aproveitar o cache de camadas do Docker
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Instalar dependências no diretório do usuário root local
+# O uso de --user nos permite facilmente copiar todas as libs instaladas no segundo estágio
+RUN pip install --no-cache-dir --user -r requirements.txt
 
 
-# Estágio 2: Imagem final leve para execução
-FROM python:3.12-slim AS runner
+# ==============================================================================
+# Estágio 2: Imagem final leve e segura para execução
+# ==============================================================================
+FROM python:3.11-slim
 
-# Definir variáveis de ambiente recomendadas
+# Definir variáveis de ambiente recomendadas para o Python em containers:
+# - PYTHONDONTWRITEBYTECODE: Impede a escrita de arquivos .pyc otimizando o espaço em disco
+# - PYTHONUNBUFFERED: Garante o envio imediato de logs para o console sem buffering
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/opt/venv/bin:$PATH"
+    PATH=/home/appuser/.local/bin:$PATH
+
+# Criar um grupo e usuário de sistema não-root por questões de segurança (Princípio de Privilégio Mínimo)
+RUN groupadd -g 10001 appgroup && \
+    useradd -u 10001 -g appgroup -m -d /home/appuser -s /sbin/nologin appuser
 
 WORKDIR /app
 
-# Copiar as dependências instaladas no ambiente virtual
-COPY --from=builder /opt/venv /opt/venv
+# Copiar as dependências instaladas no builder para a pasta do novo usuário
+COPY --from=builder /root/.local /home/appuser/.local
 
-# Copiar os códigos da aplicação
+# Copiar o código fonte do serviço
 COPY app.py .
 
-# Criar um usuário não-root por segurança
-RUN addgroup --system appgroup && adduser --system --group appuser \
-    && chown -R appuser:appgroup /app
+# Ajustar as permissões de propriedade para o usuário não-root
+RUN chown -R appuser:appgroup /app /home/appuser
 
-# Mudar para o usuário não-root
+# Usar o usuário não-root criado
 USER appuser
 
-# Expor a porta em que o Flask/Gunicorn escuta
+# Expor a porta que a aplicação escuta por padrão
 EXPOSE 8005
 
-# Comando para iniciar a aplicação com o Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8005", "app:app"]
+# Rodar a aplicação utilizando o servidor de produção Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8005", "--workers", "4", "--threads", "2", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
