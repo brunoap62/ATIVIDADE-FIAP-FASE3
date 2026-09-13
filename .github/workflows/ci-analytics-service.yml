@@ -91,13 +91,27 @@ jobs:
     steps:
       - name: 📥 Checkout código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: 🔒 Executar Horusec CLI
-        run: |
-          echo "Instalando Horusec CLI..."
-          curl -fsSL https://raw.githubusercontent.com/ZupIT/horusec/main/deployments/scripts/install.sh | bash -s latest
-          echo "Executando SAST com Horusec na pasta ${{ env.SERVICE_DIR }}..."
-          horusec start -p ./${{ env.SERVICE_DIR }} -P "$(pwd)" --return-error=true -s="CRITICAL" --log-level=error
+      - name: 🔍 Executar Horusec SAST
+        uses: fike/horusec-action@v0.2.2
+        with:
+          arguments: >
+            -p ./${{ env.SERVICE_DIR }}
+            -o json
+            -O horusec-results.json
+            --ignore-severity LOW
+            --return-error=true
+            -s CRITICAL
+
+      - name: 📤 Upload Relatório Horusec
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: horusec-report-${{ env.SERVICE_DIR }}
+          path: horusec-results.json
+          retention-days: 30
 
   # ==============================================================================
   # STAGE 1 (PARALELO): SCA com Trivy FS
@@ -110,14 +124,32 @@ jobs:
       - name: 📥 Checkout código
         uses: actions/checkout@v4
 
-      - name: 🛡️ Executar Trivy FS
+      - name: 🔍 Trivy FS Scan (Table)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '${{ env.SERVICE_DIR }}'
+          format: 'table'
           severity: 'CRITICAL'
           exit-code: '1'
           ignore-unfixed: true
+
+      - name: 📄 Gerar Relatório JSON do Trivy SCA
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          scan-type: 'fs'
+          scan-ref: '${{ env.SERVICE_DIR }}'
+          format: 'json'
+          output: 'trivy-sca-results.json'
+
+      - name: 📤 Upload Relatório Trivy SCA
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-sca-report-${{ env.SERVICE_DIR }}
+          path: trivy-sca-results.json
+          retention-days: 30
 
   # ==============================================================================
   # STAGE 2: Build Docker & Container Image Security Scan (Fan-In após Stage 1)
@@ -146,14 +178,32 @@ jobs:
           echo "Construindo imagem local para Container Scan..."
           docker build --platform linux/amd64 -t ${{ env.SERVICE_DIR }}:local ./${{ env.SERVICE_DIR }}
 
-      - name: 🔍 Container Security Scan - Trivy Image
+      - name: 🔍 Container Security Scan (Table)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'image'
           image-ref: '${{ env.SERVICE_DIR }}:local'
+          format: 'table'
           severity: 'CRITICAL'
           exit-code: '1'
           ignore-unfixed: true
+
+      - name: 📄 Gerar Relatório JSON do Container Scan
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          scan-type: 'image'
+          image-ref: '${{ env.SERVICE_DIR }}:local'
+          format: 'json'
+          output: 'trivy-container-results.json'
+
+      - name: 📤 Upload Relatório Container Scan
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-container-report-${{ env.SERVICE_DIR }}
+          path: trivy-container-results.json
+          retention-days: 30
 
       - name: 🔑 Configure AWS credentials (Push to ECR)
         if: github.event_name != 'pull_request'
