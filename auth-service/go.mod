@@ -20,3 +20,5 @@ require (
 	golang.org/x/crypto v0.20.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 )
+
+require golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
