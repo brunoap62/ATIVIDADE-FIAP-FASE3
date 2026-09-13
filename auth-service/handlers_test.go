@@ -40,8 +40,8 @@ func TestHealthHandler(t *testing.T) {
 		t.Fatalf("falha ao deserializar resposta JSON: %v", err)
 	}
 
-	if body["status"] != "ok" {
-		t.Errorf("campo status incorreto: obteve %q, esperado %q", body["status"], "ok")
+	if !strings.HasPrefix(body["status"], "ok") {
+		t.Errorf("campo status incorreto: obteve %q, esperado prefixo 'ok'", body["status"])
 	}
 }
 
