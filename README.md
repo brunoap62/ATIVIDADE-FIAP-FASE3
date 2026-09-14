@@ -204,7 +204,28 @@ Cada microsserviço possui uma pipeline automatizada (`.github/workflows/ci-*.ym
 
 ---
 
-## ⚡ 7. Guia Rápido de Execução e Comandos Úteis
+## 🔑 7. Configuração de Secrets no GitHub Actions (Automação Total)
+
+Para que todo o ecossistema de CI/CD e GitOps funcione de forma **100% automática e autônoma**, é necessário apenas cadastrar **4 Repository Secrets** no repositório do GitHub (`Settings > Secrets and variables > Actions`):
+
+| Secret Name | Exemplo de Valor | Descrição |
+| :--- | :--- | :--- |
+| **`AWS_ACCESS_KEY_ID`** | `AKIAIOSFODNN7EXAMPLE` | Chave de acesso AWS com permissões para CI/CD (ECR, EKS, Terraform). |
+| **`AWS_SECRET_ACCESS_KEY`** | `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY` | Chave secreta da AWS correspondente. |
+| **`AWS_REGION`** | `us-east-2` | Região da AWS onde toda a infraestrutura está provisionada. |
+| **`PROJECT_NAME`** | `toggle-master-fase3` | Nome base do projeto usado dinamicamente para ECR, IAM e tags. |
+
+> 🌟 **Como a mágica acontece:**
+> Com apenas essas 4 variáveis cadastradas:
+> 1. **Pipelines de CI/CD** rodam os testes, linters, SAST (Horusec), SCA e varredura de contêineres (Trivy).
+> 2. As imagens Docker são construídas e enviadas automaticamente para os repositórios **AWS ECR** corretos (`${PROJECT_NAME}/${SERVICE_DIR}`).
+> 3. Os manifestos do **GitOps** (`kustomization.yml`) são atualizados com a nova tag de imagem e commitados via workflow.
+> 4. O **ArgoCD** detecta a alteração e executa o rollout sincronizado nos pods do **Amazon EKS**.
+> 5. As credenciais e connection strings de banco de dados (RDS, Redis, SQS) são resolvidas dinamicamente via **AWS SSM Parameter Store** e **External Secrets Operator** sem qualquer intervenção manual.
+
+---
+
+## ⚡ 8. Guia Rápido de Execução e Comandos Úteis
 
 ### 🔹 1. Acesso ao Painel do ArgoCD:
 
