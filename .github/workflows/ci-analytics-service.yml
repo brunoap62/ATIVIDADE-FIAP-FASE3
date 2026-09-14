@@ -20,7 +20,7 @@ env:
   CLUSTER_NAME: ${{ secrets.PROJECT_NAME }}-eks-cluster
   ECR_REPOSITORY: ${{ secrets.PROJECT_NAME }}/analytics-service-default
   SERVICE_DIR: analytics-service
-  ARGOCD_APP_FILE: gitops/argocd-app-prod.yml
+  ARGOCD_APP_FILE: gitops/bootstrap/argocd/app-prod.yml
 
 jobs:
   # ==============================================================================

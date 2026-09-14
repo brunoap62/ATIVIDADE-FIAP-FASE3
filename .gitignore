@@ -1,6 +1,7 @@
 # Environment & Secret files
 .env
 **/.env
+terraform/ingress_output.tf
 *.env
 *.pdf
 *.old
