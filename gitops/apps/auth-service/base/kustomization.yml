@@ -20,4 +20,4 @@ resources:
 images:
 - name: fase2-auth-service
   newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/auth-service-default
-  newTag: e46278ee678eee52cb7f709f385caf239de7374b
+  newTag: 7f7a85b64229b37a7b00037436e430cb9e1780ec
