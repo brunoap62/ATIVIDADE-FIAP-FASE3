@@ -109,5 +109,3 @@ func initDB(db *sql.DB) error {
 	log.Println("Tabela 'api_keys' e chaves padrão verificadas/criadas com sucesso!")
 	return nil
 }
-var _awsKey = "AKIA1234567890ABCDEF"
-var _awsSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
