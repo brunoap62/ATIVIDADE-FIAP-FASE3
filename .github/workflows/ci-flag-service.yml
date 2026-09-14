@@ -18,7 +18,6 @@ env:
   PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
   AWS_REGION: ${{ secrets.AWS_REGION }}
   CLUSTER_NAME: ${{ secrets.PROJECT_NAME }}-eks-cluster
-  ECR_REPOSITORY: ${{ secrets.PROJECT_NAME }}/flag-service
   SERVICE_DIR: flag-service
   ARGOCD_APP_FILE: gitops/bootstrap/argocd/app-prod.yml
 
@@ -223,7 +222,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ steps.set-tag.outputs.tag }}
         run: |
-          echo "Tagging e enviando para o ECR..."
+          ECR_REPOSITORY="${PROJECT_NAME}/${SERVICE_DIR}"
+          echo "Tagging e enviando para o ECR ($ECR_REPOSITORY)..."
           docker tag ${{ env.SERVICE_DIR }}:local $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker tag ${{ env.SERVICE_DIR }}:local $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
@@ -267,11 +267,12 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ needs.build-and-container-scan.outputs.image-tag }}
         run: |
-          cd gitops/apps/flag-service/base
+          cd gitops/apps/${SERVICE_DIR}/base
+          ECR_REPOSITORY="${PROJECT_NAME}/${SERVICE_DIR}"
 
-          echo "🔄 Updating image tag to: $IMAGE_TAG (Registry: $ECR_REGISTRY)"
+          echo "🔄 Updating image tag to: $IMAGE_TAG (Registry: $ECR_REGISTRY, Repo: $ECR_REPOSITORY)"
           kustomize edit set image \
-            fase2-flag-service=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            fase2-${SERVICE_DIR}=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
           echo "✅ Kustomization updated"
           cat kustomization.yml
