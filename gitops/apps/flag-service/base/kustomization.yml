@@ -19,4 +19,4 @@ resources:
 images:
 - name: fase2-flag-service
   newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/toggle-master-fase3/flag-service
-  newTag: d462fbcf4bf74b17296a70725e44b8af518bb8f6
+  newTag: 8830070786cff28431ed911405d12bf16c0c4e18
