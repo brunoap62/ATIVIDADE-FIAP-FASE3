@@ -148,7 +148,42 @@ terraform/
 
 ---
 
-## 🐙 5. GitOps com Kustomize & ArgoCD
+## 💰 5. Estimativa Oficial de Custos na AWS (FinOps)
+
+O dimensionamento da infraestrutura foi planejado seguindo os pilares de **Excelência Operacional e Otimização de Custos (FinOps)** do *AWS Well-Architected Framework*.
+
+A estimativa oficial foi modelada através da [AWS Pricing Calculator](https://calculator.aws/) sob o ID de workload **`d56598ab-c232-4a75-b5b6-892ae7bdebe6`**, totalizando **US$ 247,11 / mês**:
+
+![Estimativa Oficial de Custos AWS](Calculadora%20de%20custos.png)
+
+### 📊 Resumo de Custos Mensais por Recurso:
+
+| Serviço AWS | Componente & Dimensionamento no Terraform | Custo Mensal (USD) |
+| :--- | :--- | :--- |
+| **Amazon EKS** | 1x Cluster Control Plane 1.31 (Standard Support - 730h) | **$73.00** |
+| **Amazon EC2 (EKS Nodes)** | 2x Instâncias `t3.medium` On-Demand (1.460h) | **$60.74** |
+| **Amazon RDS (PostgreSQL)** | 3x Instâncias `db.t3.micro` Single-AZ (`auth_db`, `flag_db`, `targeting_db` - 2.190h) | **$39.42** |
+| **AWS VPC (NAT Gateway)** | 1x NAT Gateway nas subnets públicas (730h) | **$32.85** |
+| **Elastic Load Balancing (NLB)** | 1x Network Load Balancer (Ingress NGINX - 730h) + LCUs | **$16.49** |
+| **Amazon ElastiCache (Redis)** | 1x Nó `cache.t3.micro` On-Demand (Redis 7.0 - 730h) | **$12.41** |
+| **Amazon RDS (Storage gp3)** | 60 GB GP3 Storage (20 GB por banco RDS) | **$6.90** |
+| **Amazon EC2 (Storage gp3)** | 40 GB GP3 EBS Storage (20 GB por nó EKS) | **$3.20** |
+| **Amazon ECR** | 10 GB de armazenamento de imagens Docker (5 repositórios) | **$1.00** |
+| **Amazon DynamoDB** | Modo On-Demand (`PAY_PER_REQUEST` - 1M writes + 500k reads + 5 GB) | **$0.69** |
+| **Amazon SQS** | 1x Fila Standard `evaluation-queue` (1.000.000 requisições/mês) | **$0.40** |
+| **AWS SSM Parameter Store** | Parâmetros `SecureString` no Standard Tier | **$0.00 (Gratuito)** |
+| **IAM IRSA / OIDC** | Autenticação temporária sem chaves estáticas | **$0.00 (Gratuito)** |
+| **TOTAL MENSAL ESTIMADO** | **Ambiente de Produção Completo em Operação 24/7** | **US$ 247.11 / mês** |
+
+> 💡 **Destaques de FinOps:**
+> - **DynamoDB Serverless (`PAY_PER_REQUEST`):** Custo praticamente nulo quando ocioso ($0,69/mês), sem pagar por capacidade provisionada desnecessária.
+> - **SSM Parameter Store Standard Tier:** Gestão de segredos e credenciais criptografadas sem custos fixos mensais por segredo.
+> - **ArgoCD via `ClusterIP`:** Economia de ~$20/mês eliminando a necessidade de um segundo Load Balancer dedicado.
+> - **Storage Moderno GP3:** Garante 3.000 IOPS e 125 MB/s nativos por disco com custo 20% menor que o antigo GP2.
+
+---
+
+## 🐙 6. GitOps com Kustomize & ArgoCD
 
 A entrega contínua segue os princípios de **GitOps**, onde o estado do cluster é uma representação fiel do repositório Git.
 
@@ -178,7 +213,7 @@ gitops/
 
 ---
 
-## 🛡️ 6. Pipeline Multi-Stage DevSecOps (GitHub Actions)
+## 🛡️ 7. Pipeline Multi-Stage DevSecOps (GitHub Actions)
 
 Cada microsserviço possui uma pipeline automatizada (`.github/workflows/ci-*.yml`) estruturada em **6 estágios com Quality Gates rigorosos**:
 
@@ -204,7 +239,7 @@ Cada microsserviço possui uma pipeline automatizada (`.github/workflows/ci-*.ym
 
 ---
 
-## 🔑 7. Configuração de Secrets no GitHub Actions (Automação Total)
+## 🔑 8. Configuração de Secrets no GitHub Actions (Automação Total)
 
 Para que todo o ecossistema de CI/CD e GitOps funcione de forma **100% automática e autônoma**, é necessário apenas cadastrar **4 Repository Secrets** no repositório do GitHub (`Settings > Secrets and variables > Actions`):
 
@@ -225,7 +260,7 @@ Para que todo o ecossistema de CI/CD e GitOps funcione de forma **100% automáti
 
 ---
 
-## ⚡ 8. Guia Rápido de Execução e Comandos Úteis
+## ⚡ 9. Guia Rápido de Execução e Comandos Úteis
 
 ### 🔹 1. Acesso ao Painel do ArgoCD:
 
