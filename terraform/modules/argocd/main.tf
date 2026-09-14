@@ -7,6 +7,7 @@ resource "helm_release" "argocd" {
   create_namespace = true
   timeout          = 600
   wait             = true
+  cleanup_on_fail  = true
 
   set {
     name  = "server.service.type"

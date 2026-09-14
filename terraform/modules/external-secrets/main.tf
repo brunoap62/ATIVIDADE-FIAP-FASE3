@@ -83,6 +83,7 @@ resource "helm_release" "external_secrets" {
   create_namespace = true
   timeout          = 600
   wait             = true
+  cleanup_on_fail  = true
 
   set {
     name  = "installCRDs"

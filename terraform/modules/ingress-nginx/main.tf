@@ -7,6 +7,7 @@ resource "helm_release" "ingress_nginx" {
   create_namespace = true
   timeout          = 600
   wait             = true
+  cleanup_on_fail  = true
 
   set {
     name  = "controller.service.type"
