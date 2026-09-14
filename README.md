@@ -14,6 +14,7 @@ flowchart TD
                 IngressNginx["Ingress NGINX Controller (AWS NLB)"]
                 ArgoCD["ArgoCD (GitOps Engine)"]
                 ESO["External Secrets Operator (ESO)"]
+                K8sSecrets["Secrets Nativas do K8s\n(*-service-secret)"]
                 
                 AuthSvc["auth-service (Go)"]
                 FlagSvc["flag-service (Python)"]
@@ -50,7 +51,14 @@ flowchart TD
     AnalyticsSvc --> SQSQueue
     AnalyticsSvc --> DynamoDBTable
 
-    ESO -.->|Sincroniza Segredos via IRSA| SSM
+    ESO -.->|1. Consulta via IRSA| SSM
+    ESO -->|2. Cria/Sincroniza| K8sSecrets
+    K8sSecrets -->|3. Injeta envFrom| AuthSvc
+    K8sSecrets -->|3. Injeta envFrom| FlagSvc
+    K8sSecrets -->|3. Injeta envFrom| TargetingSvc
+    K8sSecrets -->|3. Injeta envFrom| EvalSvc
+    K8sSecrets -->|3. Injeta envFrom| AnalyticsSvc
+
     ArgoCD -.->|Aplica Manifestos Kustomize| EKS_Cluster
 ```
 
@@ -231,13 +239,4 @@ curl -i http://$INGRESS_HOST/targeting/health
 curl -i http://$INGRESS_HOST/evaluate-api/health
 curl -i http://$INGRESS_HOST/analytics-api/health
 ```
-
----
-
-## 📚 8. Documentos de Apoio Adicionais
-
-- 📋 [Diagrama de Sequência & Guia de Segredos](DIAGRAMA_SEQUENCIA_SECRETS.md)
-- 💰 [Relatório de Estimativa de Custos AWS (FinOps)](IAPLANOS/ESTIMATIVA_CUSTOS_AWS.md)
-- 🎬 [Roteiro Detalhado de Gravação do Vídeo](IAPLANOS/ROTEIRO_GRAVACAO_VIDEO.md)
-- 🧠 [Registro Contínuo de Decisões e Contexto do Projeto](ANNOTATIONS/CONTEXTO_PROJETO.md)
 

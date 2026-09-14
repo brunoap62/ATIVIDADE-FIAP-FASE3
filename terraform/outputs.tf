@@ -177,18 +177,8 @@ output "dynamodb_table_arn" {
 }
 
 # ------------------------------------------------------------------------------
-# 7. Storage & Registro de Containers (S3 [COMENTADO] & ECR)
+# 7. Registro de Containers (AWS ECR)
 # ------------------------------------------------------------------------------
-# output "s3_bucket_name" {
-#   description = "Nome do bucket S3"
-#   value       = module.s3.bucket_domain_name
-# }
-# 
-# output "s3_bucket_id" {
-#   description = "ID do bucket S3"
-#   value       = module.s3.bucket_id
-# }
-
 output "ecr_repository_urls" {
   description = "URLs dos repositórios ECR criados"
   value       = module.ecr.repository_urls

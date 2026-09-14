@@ -20,5 +20,5 @@ resources:
 # O "newName" e "newTag" são atualizados dinamicamente pelo CI/CD
 images:
 - name: fase2-evaluation-service
-  newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/evaluation-service-default
+  newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/super-app-v1/evaluation-service
   newTag: 071e51f3aabfbdd276c58215df9cd40833e25517

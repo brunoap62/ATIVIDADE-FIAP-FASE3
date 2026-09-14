@@ -135,11 +135,11 @@ module "iam_irsa" {
 module "ecr" {
   source = "./modules/ecr"
   repository_names = [
-    "${var.project_name}/auth-service-${terraform.workspace}",
-    "${var.project_name}/flag-service-${terraform.workspace}",
-    "${var.project_name}/targeting-service-${terraform.workspace}",
-    "${var.project_name}/evaluation-service-${terraform.workspace}",
-    "${var.project_name}/analytics-service-${terraform.workspace}"
+    "${var.project_name}/auth-service",
+    "${var.project_name}/flag-service",
+    "${var.project_name}/targeting-service",
+    "${var.project_name}/evaluation-service",
+    "${var.project_name}/analytics-service"
   ]
 }
 
