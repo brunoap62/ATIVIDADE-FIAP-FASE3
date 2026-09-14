@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pytest
 from unittest.mock import patch, MagicMock
 
-os.environ["DATABASE_URL"] = "postgres://test:test@localhost:5432/test"
+os.environ["DATABASE_URL"] = "postgresql://localhost:5432/targeting_db_test"
 os.environ["AUTH_SERVICE_URL"] = "http://auth-service"
 
 @pytest.fixture(autouse=True)
