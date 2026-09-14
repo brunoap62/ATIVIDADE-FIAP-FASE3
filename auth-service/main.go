@@ -110,5 +110,3 @@ func initDB(db *sql.DB) error {
 	return nil
 }
 
-var _awsKey = "AKIA1234567890ABCDEF"
-var _awsSecret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
