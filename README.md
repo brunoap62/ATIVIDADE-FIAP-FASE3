@@ -15,14 +15,14 @@ flowchart TD
                 ArgoCD["ArgoCD (GitOps Engine)"]
                 ESO["External Secrets Operator (ESO)"]
                 K8sSecrets["Secrets Nativas do K8s\n(*-service-secret)"]
-                
+
                 AuthSvc["auth-service (Go)"]
                 FlagSvc["flag-service (Python)"]
                 TargetingSvc["targeting-service (Python)"]
                 EvalSvc["evaluation-service (Go)"]
                 AnalyticsSvc["analytics-service (Python)"]
             end
-            
+
             subgraph Private_Data ["Camada de Dados & Cache"]
                 AuthRDS[("RDS: auth_db\n(PostgreSQL)")]
                 FlagRDS[("RDS: flag_db\n(PostgreSQL)")]
@@ -31,7 +31,7 @@ flowchart TD
                 DynamoDBTable[("DynamoDB Table\n(Serverless)")]
             end
         end
-        
+
         SQSQueue[("AWS SQS Queue\n(evaluation-queue)")]
         SSM[("AWS SSM Parameter Store\n(SecureString)")]
         ECR["AWS ECR Repositories"]
@@ -66,13 +66,13 @@ flowchart TD
 
 ## 🧩 2. Os 5 Microsserviços do Projeto
 
-| Microsserviço | Linguagem | Banco / Integração | Responsabilidade |
-| :--- | :--- | :--- | :--- |
-| **`auth-service`** | Go (Gin) | RDS PostgreSQL (`auth_db`) | Gerenciamento de chaves de API (`api_keys`) e validação de tokens. |
-| **`flag-service`** | Python (Flask) | RDS PostgreSQL (`flag_db`) | CRUD de Feature Flags e status de ativação/desativação. |
-| **`targeting-service`**| Python (Flask) | RDS PostgreSQL (`targeting_db`) | Regras de segmentação de público e targeting por atributos. |
-| **`evaluation-service`**| Go | Redis + SQS + Flag/Targeting | Motor de avaliação de regras de alta performance com cache L1 e eventos assíncronos. |
-| **`analytics-service`** | Python | AWS SQS + DynamoDB | Consumidor assíncrono que persiste métricas e eventos de avaliação no NoSQL. |
+| Microsserviço            | Linguagem      | Banco / Integração              | Responsabilidade                                                                     |
+| :----------------------- | :------------- | :------------------------------ | :----------------------------------------------------------------------------------- |
+| **`auth-service`**       | Go (Gin)       | RDS PostgreSQL (`auth_db`)      | Gerenciamento de chaves de API (`api_keys`) e validação de tokens.                   |
+| **`flag-service`**       | Python (Flask) | RDS PostgreSQL (`flag_db`)      | CRUD de Feature Flags e status de ativação/desativação.                              |
+| **`targeting-service`**  | Python (Flask) | RDS PostgreSQL (`targeting_db`) | Regras de segmentação de público e targeting por atributos.                          |
+| **`evaluation-service`** | Go             | Redis + SQS + Flag/Targeting    | Motor de avaliação de regras de alta performance com cache L1 e eventos assíncronos. |
+| **`analytics-service`**  | Python         | AWS SQS + DynamoDB              | Consumidor assíncrono que persiste métricas e eventos de avaliação no NoSQL.         |
 
 ---
 
@@ -114,6 +114,7 @@ sequenceDiagram
 ```
 
 ### 🧱 Os Componentes Envolvidos:
+
 1. **AWS SSM Parameter Store:** Armazena parâmetros confidenciais criptografados (`SecureString`).
 2. **IRSA (IAM Roles for Service Accounts):** Concede permissões granulares aos Pods do Kubernetes via tokens JWT OIDC temporários, eliminando chaves estáticas (`AWS_ACCESS_KEY_ID`).
 3. **`ClusterSecretStore` ([`cluster-secret-store.yml`](gitops/infrastructure/base/cluster-secret-store.yml)):** Configura o conector global do Kubernetes com o Parameter Store da AWS.
@@ -172,8 +173,8 @@ gitops/
         └── kustomization.yml
 ```
 
-* **ArgoCD:** Configurado como serviço `ClusterIP` com reconciliação acelerada a cada **30 segundos** (`timeout.reconciliation: "30s"`).
-* **Ingress NGINX:** Roteia tráfego externo para os serviços através de um Network Load Balancer (NLB) com `rewrite-target`.
+- **ArgoCD:** Configurado como serviço `ClusterIP` com reconciliação acelerada a cada **30 segundos** (`timeout.reconciliation: "30s"`).
+- **Ingress NGINX:** Roteia tráfego externo para os serviços através de um Network Load Balancer (NLB) com `rewrite-target`.
 
 ---
 
@@ -191,7 +192,7 @@ Cada microsserviço possui uma pipeline automatizada (`.github/workflows/ci-*.ym
    - **Testes Unitários:** `go test` / `pytest` com mocks robustos de banco e AWS.
    - **Linters:** `golangci-lint` / `flake8`.
    - **SAST (Static Application Security Testing):** `Horusec CLI` analisando código estático e bloqueando vulnerabilidades.
-   - **SCA (Software Composition Analysis):** `Trivy FS` analisando dependências (`go.mod`, `requirements.txt`) e falhando em severidades `CRITICAL,HIGH`.
+   - **SCA (Software Composition Analysis):** `Trivy FS` analisando dependências (`go.mod`, `requirements.txt`) e falhando em severidades `CRITICAL`.
 2. **Stage 2 (Fan-In):**
    - Construção da imagem Docker local e varredura com `Trivy Image Scan` contra vulnerabilidades de imagem base.
 3. **Stage 3:** Push autenticado da imagem no **AWS ECR** com a tag do commit.
@@ -206,6 +207,7 @@ Cada microsserviço possui uma pipeline automatizada (`.github/workflows/ci-*.ym
 ## ⚡ 7. Guia Rápido de Execução e Comandos Úteis
 
 ### 🔹 1. Acesso ao Painel do ArgoCD:
+
 ```bash
 # Iniciar o port-forward para o painel do ArgoCD:
 kubectl port-forward svc/argocd-server -n argocd 8080:443
@@ -216,6 +218,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.pas
 ```
 
 ### 🔹 2. Validar Status do Kubernetes & Secrets:
+
 ```bash
 # Verificar se todos os 5 pods estão 1/1 Running:
 kubectl get pods -n toggle-master
@@ -228,6 +231,7 @@ kubectl get secrets -n toggle-master
 ```
 
 ### 🔹 3. Testar Endpoints via Ingress NLB:
+
 ```bash
 # Obter o Hostname do Ingress NLB:
 export INGRESS_HOST=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -239,4 +243,3 @@ curl -i http://$INGRESS_HOST/targeting/health
 curl -i http://$INGRESS_HOST/evaluate-api/health
 curl -i http://$INGRESS_HOST/analytics-api/health
 ```
-
