@@ -20,4 +20,4 @@ resources:
 images:
 - name: fase2-evaluation-service
   newName: 052717076243.dkr.ecr.us-east-2.amazonaws.com/toggle-master-fase3/evaluation-service
-  newTag: 8ba342414be6dac3fca75117227443be85acb922
+  newTag: 8bf6dc8ee24e646d8925798da5fffe02703a42c2
