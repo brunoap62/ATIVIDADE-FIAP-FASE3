@@ -210,7 +210,7 @@ Cada microsserviço possui uma pipeline automatizada (`.github/workflows/ci-*.ym
 
 ```bash
 # Iniciar o port-forward para o painel do ArgoCD:
-kubectl port-forward svc/argocd-server -n argocd 8080:443
+kubectl kubectl port-forward --address 127.0.0.1 svc/argocd-server -n argocd 8080:443
 
 # Obter a senha inicial do usuário 'admin':
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
