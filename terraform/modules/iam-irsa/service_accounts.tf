@@ -4,8 +4,19 @@
 # Gerencia os Service Accounts no cluster EKS associando automaticamente o ARN
 # dinâmico das IAM Roles criadas pelo Terraform (evita hardcode manual no GitOps).
 
+# Namespace da aplicacao (garante criacao em caso de provisionamento do zero)
+resource "kubernetes_namespace" "app_namespace" {
+  metadata {
+    name = var.namespace
+    labels = {
+      "app.kubernetes.io/managed-by" = "terraform"
+    }
+  }
+}
+
 # Service Account para o evaluation-service (permissão SQS:SendMessage)
 resource "kubernetes_service_account" "evaluation_sa" {
+  depends_on = [kubernetes_namespace.app_namespace]
   metadata {
     name      = "evaluation-service-sa"
     namespace = var.namespace
@@ -21,6 +32,7 @@ resource "kubernetes_service_account" "evaluation_sa" {
 
 # Service Account para o analytics-service (permissão SQS:ReceiveMessage + DynamoDB:PutItem)
 resource "kubernetes_service_account" "analytics_sa" {
+  depends_on = [kubernetes_namespace.app_namespace]
   metadata {
     name      = "analytics-service-sa"
     namespace = var.namespace
