@@ -69,9 +69,10 @@ func TestValidateKeyHandler(t *testing.T) {
 		},
 		{
 			name:       "chave não encontrada no banco (inativa ou inexistente)",
-			authHeader: "Bearer tm_key_invalid123",
+			authHeader: "Bearer invalid_token",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				hash := hashAPIKey("tm_key_invalid123")
+				tokenVal := "invalid_token"
+				hash := hashAPIKey(tokenVal)
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT id FROM api_keys WHERE key_hash = $1 AND is_active = true")).
 					WithArgs(hash).
 					WillReturnError(sql.ErrNoRows)
@@ -81,9 +82,10 @@ func TestValidateKeyHandler(t *testing.T) {
 		},
 		{
 			name:       "erro no banco de dados durante a validação",
-			authHeader: "Bearer tm_key_dberror",
+			authHeader: "Bearer error_token",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				hash := hashAPIKey("tm_key_dberror")
+				tokenVal := "error_token"
+				hash := hashAPIKey(tokenVal)
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT id FROM api_keys WHERE key_hash = $1 AND is_active = true")).
 					WithArgs(hash).
 					WillReturnError(errors.New("db connection timeout"))
@@ -93,9 +95,10 @@ func TestValidateKeyHandler(t *testing.T) {
 		},
 		{
 			name:       "chave válida encontrada e ativa",
-			authHeader: "Bearer tm_key_valid123",
+			authHeader: "Bearer valid_token",
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				hash := hashAPIKey("tm_key_valid123")
+				tokenVal := "valid_token"
+				hash := hashAPIKey(tokenVal)
 				rows := sqlmock.NewRows([]string{"id"}).AddRow(1)
 				mock.ExpectQuery(regexp.QuoteMeta("SELECT id FROM api_keys WHERE key_hash = $1 AND is_active = true")).
 					WithArgs(hash).
