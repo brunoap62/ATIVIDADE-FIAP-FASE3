@@ -121,11 +121,14 @@ module "iam_irsa" {
   source = "./modules/iam-irsa"
 
   project_name       = var.project_name
+  namespace          = "toggle-master"
   node_role_name     = module.eks.node_role_name
   sqs_queue_arn      = module.sqs.queue_arn
   dynamodb_table_arn = module.dynamodb.table_arn
   oidc_provider_arn  = module.eks.oidc_provider_arn
   oidc_provider_url  = module.eks.oidc_provider_url
+
+  depends_on = [module.eks]
 }
 
 # ==============================================================================

@@ -27,3 +27,9 @@ variable "oidc_provider_url" {
   description = "URL do OIDC Provider do cluster EKS"
   type        = string
 }
+
+variable "namespace" {
+  description = "Namespace do Kubernetes para associacao dos ServiceAccounts com IRSA"
+  type        = string
+  default     = "toggle-master"
+}

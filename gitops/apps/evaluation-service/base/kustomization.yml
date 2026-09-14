@@ -8,7 +8,6 @@ resources:
 - deployment.yml
 - externalsecret.yml
 - service.yml
-- serviceaccount.yml
 - hpa.yml
 
 # ============================================
